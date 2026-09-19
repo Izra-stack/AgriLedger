@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import TermsModal from "../TermsModal";
 
 export default function Footer() {
+  const [showTerms, setShowTerms] = useState(false);
   const scrollTo = (id: string) => {
     if (id === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -195,12 +198,12 @@ export default function Footer() {
             @ 2026 AgriLedger. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link
-              to="/demo"
+            <button
+              onClick={() => setShowTerms(true)}
               className="text-white/50 hover:text-white/80 text-xs transition-colors"
             >
-              Terms & Policy
-            </Link>
+              Terms & Privacy Policy
+            </button>
             <Link
               to="/demo"
               className="text-white/50 hover:text-white/80 text-xs transition-colors"
@@ -210,6 +213,12 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      <TermsModal
+        isOpen={showTerms}
+        onClose={() => setShowTerms(false)}
+        onAccept={() => setShowTerms(false)}
+      />
     </footer>
   );
 }
