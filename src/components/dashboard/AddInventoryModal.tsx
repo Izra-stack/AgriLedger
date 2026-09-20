@@ -1,4 +1,14 @@
-import { X } from 'lucide-react';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Modal } from "../ui/Modal";
+import { Input } from "../ui/Input";
+import { Select } from "../ui/Select";
+import { Button } from "../ui/Button";
+import { inventorySchema, InventoryFormValues } from "../../lib/schemas";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createInventoryItem } from "../../lib/api";
 
 interface AddInventoryModalProps {
   isOpen: boolean;
@@ -6,79 +16,159 @@ interface AddInventoryModalProps {
 }
 
 export default function AddInventoryModal({ isOpen, onClose }: AddInventoryModalProps) {
-  if (!isOpen) return null;
+  const queryClient = useQueryClient();
+  
+  const createMutation = useMutation({
+    mutationFn: createInventoryItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      toast.success("Inventory item added successfully!");
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to add item.");
+    }
+  });
+  
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<InventoryFormValues>({
+    resolver: zodResolver(inventorySchema),
+    defaultValues: {
+      category: "Fertilizer"
+    }
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset();
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = (data: InventoryFormValues) => {
+    // Generate a random SKU since form doesn't ask for it
+    const prefix = data.category === 'Fertilizer' ? 'FERT' : data.category === 'Seeds' ? 'SEED' : 'ITEM';
+    const sku = `${prefix}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    
+    createMutation.mutate({
+      sku,
+      name: data.name,
+      category: data.category,
+      unit: "unit",
+      quantity: data.stock,
+      unit_cost: data.price,
+      reorder_level: data.reorderLevel,
+      description: data.location, // Mapping location to description
+      status: "IN_STOCK"
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal */}
-      <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">Add New Item</h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Item Name</label>
-              <input type="text" placeholder="e.g. Urea (46-0-0) Pellets" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category</label>
-              <select className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark bg-white">
-                <option>Fertilizer</option>
-                <option>Seeds</option>
-                <option>Chemicals</option>
-                <option>Equipment</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">SKU / Code</label>
-              <input type="text" placeholder="e.g. FERT-004" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Initial Stock</label>
-                <input type="number" placeholder="0" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reorder Level</label>
-                <input type="number" placeholder="20" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Unit Price (₱)</label>
-              <input type="number" placeholder="0.00" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-            
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Storage Location</label>
-              <input type="text" placeholder="e.g. Warehouse A, Aisle 2" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-          </form>
-        </div>
-
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Item"
+      maxWidth="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-white bg-[#154226] hover:bg-opacity-90 rounded-lg transition-colors">
-            Save Item
-          </button>
+          </Button>
+          <Button 
+            onClick={handleSubmit(onSubmit)} 
+            disabled={isSubmitting}
+            className="min-w-[120px]"
+          >
+            {isSubmitting ? "Saving..." : "Save Item"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Item Name
+          </label>
+          <Input
+            placeholder="e.g. Urea (46-0-0) Pellets"
+            {...register("name")}
+            className={errors.name ? "border-red-500 focus:border-red-500" : ""}
+          />
+          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Category
+          </label>
+          <Select
+            {...register("category")}
+            className={errors.category ? "border-red-500 focus:border-red-500" : ""}
+          >
+            <option value="Fertilizer">Fertilizer</option>
+            <option value="Seeds">Seeds</option>
+            <option value="Chemicals">Chemicals</option>
+            <option value="Equipment">Equipment</option>
+          </Select>
+          {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              Initial Stock
+            </label>
+            <Input
+              type="number"
+              placeholder="0"
+              {...register("stock")}
+              className={errors.stock ? "border-red-500 focus:border-red-500" : ""}
+            />
+            {errors.stock && <p className="text-red-500 text-xs mt-1">{errors.stock.message}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              Reorder Level
+            </label>
+            <Input
+              type="number"
+              placeholder="20"
+              {...register("reorderLevel")}
+              className={errors.reorderLevel ? "border-red-500 focus:border-red-500" : ""}
+            />
+            {errors.reorderLevel && <p className="text-red-500 text-xs mt-1">{errors.reorderLevel.message}</p>}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Unit Price (₱)
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            {...register("price")}
+            className={errors.price ? "border-red-500 focus:border-red-500" : ""}
+          />
+          {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
+        </div>
+        
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Storage Location
+          </label>
+          <Input
+            placeholder="e.g. Warehouse A, Aisle 2"
+            {...register("location")}
+            className={errors.location ? "border-red-500 focus:border-red-500" : ""}
+          />
+          {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location.message}</p>}
+        </div>
+      </form>
+    </Modal>
   );
 }

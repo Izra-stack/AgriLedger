@@ -1,14 +1,34 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
+import { loginUser } from "../lib/api";
+import { useAuthStore } from "../store/useAuthStore";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  
   const navigate = useNavigate();
+  const setAuth = useAuthStore(state => state.setAuth);
+
+  const loginMutation = useMutation({
+    mutationFn: loginUser,
+    onSuccess: (data) => {
+      setAuth(data.user, data.token);
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Invalid credentials");
+    }
+  });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -52,6 +72,8 @@ export default function LoginPage() {
                 type="email"
                 id="email"
                 placeholder="johndoe@agriledger.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-transparent border border-white/20 rounded-lg px-4 py-3.5 text-white placeholder:text-white/30 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-colors"
                 required
               />
@@ -70,6 +92,8 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-transparent border border-white/20 rounded-lg pl-4 pr-12 py-3.5 text-white placeholder:text-white/30 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-colors tracking-[0.2em]"
                   required
                 />
@@ -87,9 +111,10 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-[#dfa43a] hover:bg-[#c9902c] text-white font-bold py-4 rounded-lg transition-colors text-base"
+              disabled={loginMutation.isPending}
+              className="w-full bg-[#dfa43a] hover:bg-[#c9902c] disabled:opacity-50 text-white font-bold py-4 rounded-lg transition-colors text-base"
             >
-              Login
+              {loginMutation.isPending ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>

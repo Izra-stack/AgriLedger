@@ -1,177 +1,177 @@
-import { X } from "lucide-react";
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Modal } from "../ui/Modal";
+import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
+import { farmerSchema, FarmerFormValues } from "../../lib/schemas";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFarmer } from "../../lib/api";
 
 interface AddFarmerModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function AddFarmerModal({
-  isOpen,
-  onClose,
-}: AddFarmerModalProps) {
-  const [transactionCommitment, setTransactionCommitment] = useState("Both");
+export default function AddFarmerModal({ isOpen, onClose }: AddFarmerModalProps) {
+  const queryClient = useQueryClient();
+  
+  const createMutation = useMutation({
+    mutationFn: createFarmer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['farmers'] });
+      toast.success("Farmer added successfully!");
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to add farmer.");
+    }
+  });
+  
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<FarmerFormValues>({
+    resolver: zodResolver(farmerSchema),
+    defaultValues: {
+      status: "Active",
+      commitment: "Both"
+    }
+  });
 
-  if (!isOpen) return null;
+  const commitment = watch("commitment");
+
+  useEffect(() => {
+    if (isOpen) {
+      reset();
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = (data: FarmerFormValues) => {
+    // We only have first_name and last_name in backend, let's split the name
+    const [first, ...rest] = data.name.trim().split(' ');
+    
+    createMutation.mutate({
+      farmer_code: `FRM-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      first_name: first || 'Unknown',
+      last_name: rest.join(' ') || 'Unknown',
+      phone: data.phone,
+      address: data.location,
+      status: data.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal */}
-      <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">Add New Farmer</h2>
-
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <div className="p-6 overflow-y-auto">
-          <form className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Full Name
-              </label>
-
-              <input
-                type="text"
-                placeholder="Juan dela Cruz"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark"
-              />
-            </div>
-
-            {/* Contact Number */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Contact Number
-              </label>
-
-              <input
-                type="text"
-                placeholder="+63 901 200 5120"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark"
-              />
-            </div>
-
-            {/* Full Address */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Full Address
-              </label>
-
-              <input
-                type="text"
-                placeholder="House/Building No., Street, Barangay, City/Municipality, Province"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark"
-              />
-            </div>
-
-            {/* Total Area */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Total Area (Hectares)
-              </label>
-
-              <input
-                type="number"
-                step="0.1"
-                placeholder="e.g. 2.5"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark"
-              />
-            </div>
-
-            {/* Transaction Commitment */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Transaction Commitment
-              </label>
-
-              <div className="grid grid-cols-3 gap-4">
-                {/* Cash Assistance */}
-                <button
-                  type="button"
-                  onClick={() => setTransactionCommitment("Cash Assistance")}
-                  className={`w-full rounded-xl px-3 py-3 text-sm font-semibold transition ${
-                    transactionCommitment === "Cash Assistance"
-                      ? "bg-[#193F2D] text-white shadow-sm"
-                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  Cash Assistance
-                </button>
-
-                {/* Farm Input */}
-                <button
-                  type="button"
-                  onClick={() => setTransactionCommitment("Farm Input")}
-                  className={`w-full rounded-xl px-3 py-3 text-sm font-semibold transition ${
-                    transactionCommitment === "Farm Input"
-                      ? "bg-[#193F2D] text-white shadow-sm"
-                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  Farm Input
-                </button>
-
-                {/* Both */}
-                <button
-                  type="button"
-                  onClick={() => setTransactionCommitment("Both")}
-                  className={`w-full rounded-xl px-3 py-3 text-sm font-semibold transition ${
-                    transactionCommitment === "Both"
-                      ? "bg-[#193F2D] text-white shadow-sm"
-                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  Both
-                </button>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Notes
-              </label>
-
-              <textarea
-                rows={3}
-                placeholder="Additional information about the farmer"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none"
-              ></textarea>
-            </div>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-          >
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Farmer"
+      maxWidth="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 text-sm font-bold text-white bg-[#154226] hover:bg-opacity-90 rounded-lg transition-colors"
+          </Button>
+          <Button 
+            onClick={handleSubmit(onSubmit)} 
+            disabled={isSubmitting}
+            className="min-w-[120px]"
           >
-            Save Farmer
-          </button>
+            {isSubmitting ? "Saving..." : "Save Farmer"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Full Name
+          </label>
+          <Input
+            placeholder="Juan dela Cruz"
+            {...register("name")}
+            className={errors.name ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Contact Number
+          </label>
+          <Input
+            placeholder="+63 901 200 5120"
+            {...register("phone")}
+            className={errors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Full Address
+          </label>
+          <Input
+            placeholder="House/Building No., Street, Barangay, City, Province"
+            {...register("location")}
+            className={errors.location ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Total Area (Hectares)
+          </label>
+          <Input
+            type="number"
+            step="0.1"
+            placeholder="e.g. 2.5"
+            {...register("area")}
+            className={errors.area ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.area && <p className="text-red-500 text-xs mt-1">{errors.area.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Transaction Commitment
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {["Cash Assistance", "Farm Input", "Both"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setValue("commitment", type as any)}
+                className={`w-full rounded-xl px-2 py-3 text-[11px] sm:text-xs font-semibold transition-colors ${
+                  commitment === type
+                    ? "bg-[#193F2D] text-white shadow-sm"
+                    : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Notes (Optional)
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Additional information about the farmer"
+            {...register("notes")}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none bg-white"
+          />
+        </div>
+      </form>
+    </Modal>
   );
 }

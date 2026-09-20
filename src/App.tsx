@@ -12,6 +12,15 @@ import InventoryPage from "./pages/InventoryPage";
 import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 
+import { useAuthStore } from "./store/useAuthStore";
+import { Navigate } from "react-router-dom";
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <>
@@ -20,7 +29,11 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<DashboardHome />} />
             <Route path="farmers" element={<FarmersPage />} />
             <Route path="farmers/:id" element={<FarmerProfilePage />} />

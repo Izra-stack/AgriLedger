@@ -15,10 +15,13 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -109,18 +112,21 @@ export default function DashboardLayout() {
         <div className="p-4 border-t border-white/10 mt-auto">
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-full bg-[#154226] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              JD
+              {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'U'}
             </div>
             <div className="flex flex-col flex-1 min-w-0">
               <span className="text-white text-sm font-medium truncate">
-                Josie Cabrera
+                {user?.full_name || 'User'}
               </span>
               <span className="text-white/50 text-[10px] uppercase tracking-wider truncate">
-                Owner / Manager
+                {user?.role || 'Role'}
               </span>
             </div>
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
               className="text-white/50 hover:text-white p-2 transition-colors"
               title="Logout"
             >
@@ -198,11 +204,11 @@ export default function DashboardLayout() {
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
                 <div className="w-8 h-8 rounded-full bg-[#EAF7EF] flex items-center justify-center text-[#0F3D21] text-xs font-bold border border-[#0F3D21]/10 flex-shrink-0">
-                  JD
+                  {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'U'}
                 </div>
                 <div className="hidden sm:flex items-center gap-1">
                   <span className="text-sm font-bold text-brand-text">
-                    John Doe
+                    {user?.full_name || 'User'}
                   </span>
                   <ChevronDown size={14} className="text-gray-400" />
                 </div>
@@ -211,14 +217,17 @@ export default function DashboardLayout() {
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
                   <div className="px-4 py-2 border-b border-gray-50 sm:hidden">
-                    <p className="text-sm font-bold text-gray-900">John Doe</p>
-                    <p className="text-[10px] text-gray-500">Admin</p>
+                    <p className="text-sm font-bold text-gray-900">{user?.full_name || 'User'}</p>
+                    <p className="text-[10px] text-gray-500">{user?.role || 'Role'}</p>
                   </div>
                   <Link to="/dashboard/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                     <Settings size={16} className="text-gray-400" /> Settings
                   </Link>
                   <button 
-                    onClick={() => navigate("/login")}
+                    onClick={() => {
+                      logout();
+                      navigate("/login");
+                    }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
                   >
                     <LogOut size={16} /> Logout

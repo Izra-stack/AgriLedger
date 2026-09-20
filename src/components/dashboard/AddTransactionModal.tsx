@@ -1,4 +1,14 @@
-import { X } from 'lucide-react';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Modal } from "../ui/Modal";
+import { Input } from "../ui/Input";
+import { Select } from "../ui/Select";
+import { Button } from "../ui/Button";
+import { transactionSchema, TransactionFormValues } from "../../lib/schemas";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getFarmers, createTransaction } from "../../lib/api";
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -6,71 +16,149 @@ interface AddTransactionModalProps {
 }
 
 export default function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProps) {
-  if (!isOpen) return null;
+  const queryClient = useQueryClient();
+  const { data: farmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
+  
+  const createMutation = useMutation({
+    mutationFn: createTransaction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      toast.success("Transaction recorded successfully!");
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to record transaction.");
+    }
+  });
+  
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm<TransactionFormValues>({
+    resolver: zodResolver(transactionSchema),
+    defaultValues: {
+      type: "Fertilizer",
+      date: new Date().toISOString().slice(0, 16) // Default to current datetime
+    }
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        type: "Fertilizer",
+        date: new Date().toISOString().slice(0, 16)
+      });
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = (data: TransactionFormValues) => {
+    createMutation.mutate({
+      transaction_code: `TRX-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      farmer_id: data.farmerId,
+      type: data.type === 'Cash Advance' ? 'CASH_ASSISTANCE' : data.type === 'Fertilizer' ? 'FERTILIZER' : 'OTHER',
+      amount: data.amount,
+      description: data.notes,
+      transaction_date: new Date(data.date)
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal */}
-      <div className="bg-white rounded-2xl w-full max-w-md relative z-10 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">Add New Transaction</h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto">
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Farmer Name or ID</label>
-              <input 
-                type="text" 
-                placeholder="Type farmer name..." 
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Transaction Type</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Fertilizer, Cash Advance..." 
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Amount (₱)</label>
-              <input type="number" placeholder="0.00" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reference Number</label>
-              <input type="text" placeholder="e.g. TRX-1033" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes / Description</label>
-              <textarea rows={2} placeholder="Optional details..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none"></textarea>
-            </div>
-          </form>
-        </div>
-
-        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Transaction"
+      maxWidth="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-white bg-[#154226] hover:bg-opacity-90 rounded-lg transition-colors">
-            Save Transaction
-          </button>
+          </Button>
+          <Button 
+            onClick={handleSubmit(onSubmit)} 
+            disabled={isSubmitting}
+            className="min-w-[120px]"
+          >
+            {isSubmitting ? "Saving..." : "Save Transaction"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Farmer
+          </label>
+          <Select
+            {...register("farmerId")}
+            className={errors.farmerId ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          >
+            <option value="">Select a farmer...</option>
+            {farmers.map(f => (
+              <option key={f.id} value={f.id}>{f.name} ({f.id})</option>
+            ))}
+          </Select>
+          {errors.farmerId && <p className="text-red-500 text-xs mt-1">{errors.farmerId.message}</p>}
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Transaction Type
+          </label>
+          <Select
+            {...register("type")}
+            className={errors.type ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          >
+            <option value="Fertilizer">Fertilizer</option>
+            <option value="Cash Advance">Cash Advance</option>
+            <option value="Mixed Package">Mixed Package</option>
+            <option value="Labor">Labor</option>
+            <option value="Seeds">Seeds</option>
+            <option value="Chemicals">Chemicals</option>
+          </Select>
+          {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Amount (₱)
+          </label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            {...register("amount")}
+            className={errors.amount ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Date & Time
+          </label>
+          <Input
+            type="datetime-local"
+            {...register("date")}
+            className={errors.date ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Notes / Description (Optional)
+          </label>
+          <textarea
+            rows={2}
+            placeholder="Optional details..."
+            {...register("notes")}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none bg-white"
+          />
+        </div>
+      </form>
+    </Modal>
   );
 }

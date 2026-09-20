@@ -1,5 +1,16 @@
-import { X, ChevronDown, Calendar, QrCode, Smartphone } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { QrCode, Smartphone, Info } from "lucide-react";
+import { Modal } from "../ui/Modal";
+import { Input } from "../ui/Input";
+import { Select } from "../ui/Select";
+import { Button } from "../ui/Button";
+import { paymentSchema, PaymentFormValues } from "../../lib/schemas";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getFarmers, getTransactions, createPayment } from "../../lib/api";
+import { format } from "date-fns";
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
@@ -8,54 +19,183 @@ interface RecordPaymentModalProps {
 
 export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
+  const queryClient = useQueryClient();
+  const { data: allFarmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
+  const { data: allTransactions = [] } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
 
-  if (!isOpen) return null;
+  const createMutation = useMutation({
+    mutationFn: createPayment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      toast.success("Payment recorded successfully!");
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to record payment.");
+    }
+  });
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting }
+  } = useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: {
+      date: new Date().toISOString().slice(0, 16)
+    }
+  });
+
+  const selectedFarmerId = watch("farmerId");
+  const selectedTxId = watch("transactionId");
+  const currentAmount = watch("amount") || 0;
+
+  // Derive relevant data
+  const selectedFarmer = allFarmers.find(f => f.id === selectedFarmerId);
+  
+  const unpaidTransactions = allTransactions.filter(
+    t => t.farmerId === selectedFarmerId && t.status !== 'Paid'
+  );
+
+  const totalOutstandingBalance = unpaidTransactions.reduce((sum, tx) => sum + tx.balance, 0);
+  
+  const selectedTx = unpaidTransactions.find(t => t.id === selectedTxId);
+
+  // Auto-reset transaction when farmer changes
+  useEffect(() => {
+    setValue("transactionId", "");
+  }, [selectedFarmerId, setValue]);
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        date: new Date().toISOString().slice(0, 16),
+        farmerId: "",
+        transactionId: "",
+        amount: 0
+      });
+      setPaymentMethod('cash');
+    }
+  }, [isOpen, reset]);
+
+  const onSubmit = (data: PaymentFormValues) => {
+    if (selectedTx && data.amount > selectedTx.balance) {
+      toast.error(`Amount cannot exceed the remaining balance of ₱${selectedTx.balance.toLocaleString()}`);
+      return;
+    }
+
+    createMutation.mutate({
+      payment_code: `PAY-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      farmer_id: data.farmerId,
+      transaction_id: data.transactionId,
+      amount: data.amount,
+      payment_method: paymentMethod === 'gcash' ? 'GCASH' : 'CASH',
+      notes: data.notes ? `[${paymentMethod.toUpperCase()}] ${data.notes}` : undefined,
+      payment_date: new Date(data.date)
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal */}
-      <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex justify-between items-start p-6 pb-4 border-b border-gray-100">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Record Payment</h2>
-            <p className="text-xs text-gray-400">Post an instant farmer repayment to update outstanding credit.</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
-            <X size={20} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Record Payment"
+      maxWidth="2xl"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit(onSubmit)} 
+            disabled={isSubmitting || (Boolean(selectedFarmerId) && unpaidTransactions.length === 0)}
+            className="min-w-[140px]"
+          >
+            {isSubmitting ? "Processing..." : "Record Payment"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Step 1: Select Farmer */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-2">Farmer Name</label>
+          <Select
+            {...register("farmerId")}
+            className={errors.farmerId ? "border-red-500 focus:border-red-500" : ""}
+          >
+            <option value="">Select a farmer...</option>
+            {allFarmers.map(f => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.id})
+              </option>
+            ))}
+          </Select>
+          {errors.farmerId && <p className="text-red-500 text-xs mt-1">{errors.farmerId.message}</p>}
         </div>
 
-        {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
-            
-            {/* Farmer */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Farmer</label>
-              <div className="relative">
-                <input 
-                  type="text"
-                  list="farmer-recent-list"
-                  defaultValue="Rodrigo Dela Cruz"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-900 focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark bg-white"
-                />
-                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <datalist id="farmer-recent-list">
-                  <option value="Rodrigo Dela Cruz" />
-                  <option value="Jose Mendoza" />
-                  <option value="Vicente O. Magsaysay" />
-                </datalist>
+        {/* Selected Farmer Info / Unpaid Transactions */}
+        {selectedFarmer && (
+          <div className="bg-[#F8FAFC] border border-gray-200 rounded-xl p-5">
+            {unpaidTransactions.length === 0 ? (
+              <div className="text-center py-6 text-sm text-gray-500 font-medium">
+                No outstanding balance for this farmer.
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{selectedFarmer.name}</div>
+                    <div className="text-[10px] text-gray-500">{unpaidTransactions.length} unpaid transaction(s)</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Outstanding</div>
+                    <div className="text-xl font-extrabold text-red-600">₱{totalOutstandingBalance.toLocaleString()}</div>
+                  </div>
+                </div>
 
-            {/* Payment Method */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-2">Select Transaction to Pay</label>
+                  <Select
+                    {...register("transactionId")}
+                    className={errors.transactionId ? "border-red-500 focus:border-red-500" : ""}
+                  >
+                    <option value="">Select an outstanding transaction...</option>
+                    {unpaidTransactions.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {format(new Date(t.date), 'MMM dd, yyyy')} - {t.type} (Balance: ₱{t.balance.toLocaleString()})
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.transactionId && <p className="text-red-500 text-xs mt-1">{errors.transactionId.message}</p>}
+                </div>
+
+                {selectedTx && (
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Original Amount</div>
+                      <div className="text-sm font-bold text-gray-900">₱{selectedTx.amount.toLocaleString()}</div>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Already Paid</div>
+                      <div className="text-sm font-bold text-gray-900">₱{(selectedTx.amount - selectedTx.balance).toLocaleString()}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Payment Details (Only show if an unpaid transaction is selected) */}
+        {selectedTx && (
+          <>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-2">Payment Method</label>
               <div className="grid grid-cols-2 gap-3">
@@ -68,11 +208,6 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
                       : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="6" width="20" height="12" rx="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <path d="M6 12h.01M18 12h.01" />
-                  </svg>
                   Cash
                 </button>
                 <button
@@ -90,25 +225,26 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
               </div>
             </div>
 
-            {/* Dynamic Middle Section based on Payment Method */}
             {paymentMethod === 'cash' ? (
-              /* Amount Paid (Cash Mode) */
-              <div>
-                <div className="flex justify-between items-end mb-2">
-                  <label className="block text-xs font-bold text-gray-700">Amount Paid (₱)</label>
-                  <span className="text-[10px] font-medium text-gray-400">Total balance: ₱34,900.00</span>
-                </div>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">₱</span>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. 5000" 
-                    className="w-full border border-gray-200 rounded-lg pl-8 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark bg-white"
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="block text-xs font-bold text-gray-700">Amount Paid (₱)</label>
+                  </div>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 5000"
+                    {...register("amount", { 
+                      valueAsNumber: true,
+                      validate: (val) => val <= selectedTx.balance || 'Cannot exceed remaining balance'
+                    })}
+                    className={errors.amount ? "border-red-500 focus:border-red-500" : ""}
                   />
+                  {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
                 </div>
               </div>
             ) : (
-              /* GCash QR Block */
               <div className="border border-blue-200 border-dashed rounded-xl bg-[#F8FAFC] p-5">
                 <div className="flex items-start mb-6">
                   <div className="flex gap-3">
@@ -118,7 +254,7 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
                         <span className="text-sm font-bold text-gray-900">Scan to Pay with GCash</span>
                         <span className="bg-blue-100 text-[#007DFE] text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Instant Credit</span>
                       </div>
-                      <div className="text-[10px] text-[#007DFE] font-medium">Merchant: AGRILedger - Davao Hub + Ref: #AG-88219</div>
+                      <div className="text-[10px] text-[#007DFE] font-medium">Merchant: AGRILedger - Davao Hub</div>
                     </div>
                   </div>
                 </div>
@@ -127,75 +263,66 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
                   <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
                     <div className="w-28 h-28 border border-gray-100 rounded-lg flex items-center justify-center bg-gray-50 relative overflow-hidden">
                        <QrCode size={80} className="text-gray-800" strokeWidth={1.5} />
-                       {/* Center G logo mock */}
-                       <div className="absolute inset-0 flex items-center justify-center">
-                         <div className="w-6 h-6 bg-white flex items-center justify-center rounded">
-                           <div className="w-5 h-5 bg-[#007DFE] text-white flex items-center justify-center text-[10px] font-bold rounded-sm">G</div>
-                         </div>
-                       </div>
                     </div>
                   </div>
-                  <div>
+                  <div className="w-full">
                     <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
                       <Smartphone size={16} className="text-[#007DFE]" /> Scan via GCash App
                     </h4>
                     <p className="text-[11px] text-gray-500 leading-relaxed mb-4">
-                      Have the farmer scan this QR code using their GCash app to complete payment. Funds settle immediately to AGRILedger Trust.
+                      Have the farmer scan this QR code using their GCash app to complete payment. Funds settle immediately.
                     </p>
-                    <div className="flex gap-2">
-                      <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-1 rounded">REF: REC-2024-8842</span>
-                      <span className="bg-[#EAF7EF] text-[#154226] text-[9px] font-bold px-2 py-1 rounded">Auto-verified</span>
+                    <div className="mb-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter confirmed amount..."
+                        {...register("amount", { 
+                          valueAsNumber: true,
+                          validate: (val) => val <= selectedTx.balance || 'Cannot exceed remaining balance'
+                        })}
+                        className={`!py-1.5 !text-xs ${errors.amount ? "border-red-500 focus:border-red-500" : ""}`}
+                      />
+                      {errors.amount && <p className="text-red-500 text-[10px] mt-1">{errors.amount.message}</p>}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Payment For */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Payment For</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Fertilizer Loan, Cash Assistance..." 
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark bg-white"
-              />
-            </div>
-
-            {/* Payment Date */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Payment Date</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  defaultValue="10/24/2024" 
-                  className="w-full border border-gray-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark bg-white"
-                />
-                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            {/* Display Remaining Balance Projection */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center gap-3">
+              <Info size={16} className="text-gray-400 flex-shrink-0" />
+              <div className="flex-1 flex justify-between items-center">
+                <span className="text-xs text-gray-600 font-medium">Balance after payment:</span>
+                <span className="text-sm font-bold text-gray-900">
+                  ₱{Math.max(0, selectedTx.balance - (currentAmount || 0)).toLocaleString()}
+                </span>
               </div>
             </div>
 
-            {/* Remarks */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Payment Details & Remarks <span className="text-gray-400 font-normal">(optional)</span></label>
-              <textarea 
-                rows={3}
-                placeholder="Specify what exactly is being paid for (e.g. Urea fertilizer 6 bags, Land prep cash advance repayment)..." 
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none placeholder:text-gray-400"
-              ></textarea>
+              <label className="block text-xs font-bold text-gray-700 mb-2">Payment Date</label>
+              <Input
+                type="datetime-local"
+                {...register("date")}
+                className={errors.date ? "border-red-500 focus:border-red-500" : ""}
+              />
+              {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
             </div>
-          </form>
-        </div>
 
-        {/* Footer */}
-        <div className="p-6 pt-4 flex justify-end gap-3 bg-white">
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors">
-            Cancel
-          </button>
-          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-white bg-[#154226] hover:bg-opacity-90 rounded-lg transition-colors">
-            Record Payment
-          </button>
-        </div>
-      </div>
-    </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-2">Payment Details & Remarks (optional)</label>
+              <textarea 
+                rows={2}
+                placeholder="Specify payment details..." 
+                {...register("notes")}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark resize-none placeholder:text-gray-400 bg-white"
+              />
+            </div>
+          </>
+        )}
+      </form>
+    </Modal>
   );
 }
