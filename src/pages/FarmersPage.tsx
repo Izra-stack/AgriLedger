@@ -21,6 +21,7 @@ import {
 
 export default function FarmersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const navigate = useNavigate();
@@ -123,6 +124,13 @@ export default function FarmersPage() {
                   }}>
                     <span className="text-red-500 text-sm hover:underline">Delete</span>
                   </button>
+                  <button className="text-[#0F3D21] text-sm hover:underline ml-3" onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedFarmer(farmer);
+                    setIsAddModalOpen(true);
+                  }}>
+                    Edit
+                  </button>
                 </TableCell>
               </TableRow>
             ))}
@@ -143,9 +151,13 @@ export default function FarmersPage() {
         />
       )}
 
-      <AddFarmerModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
+      <AddFarmerModal
+        isOpen={isAddModalOpen}
+        farmer={selectedFarmer}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedFarmer(null);
+        }}
       />
     </Card>
   );

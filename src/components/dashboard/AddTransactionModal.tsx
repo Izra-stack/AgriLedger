@@ -56,9 +56,8 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
 
   const onSubmit = (data: TransactionFormValues) => {
     createMutation.mutate({
-      transaction_code: `TRX-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       farmer_id: data.farmerId,
-      type: data.type === 'Cash Advance' ? 'CASH_ASSISTANCE' : data.type === 'Fertilizer' ? 'FERTILIZER' : 'OTHER',
+      type: ({ 'Cash Advance': 'CASH_ASSISTANCE', Fertilizer: 'FERTILIZER', 'Mixed Package': 'MIXED_PACKAGE', Labor: 'LABOR', Seeds: 'SEEDS', Chemicals: 'CHEMICALS' } as Record<string, string>)[data.type],
       amount: data.amount,
       description: data.notes,
       transaction_date: new Date(data.date)

@@ -3,11 +3,11 @@ import { PaymentsService } from "../services/payments.service.js";
 import { z } from "zod";
 
 const createPaymentSchema = z.object({
-  payment_code: z.string().min(1, "Payment code is required").max(30),
+  payment_code: z.string().min(1).max(30).optional(),
   farmer_id: z.string().uuid("Invalid farmer ID"),
   transaction_id: z.string().uuid("Invalid transaction ID"),
   amount: z.number().positive("Amount must be greater than zero"),
-  payment_method: z.string().min(1, "Payment method is required").max(30),
+  payment_method: z.literal("CASH"),
   reference_number: z.string().max(100).optional(),
   notes: z.string().optional(),
   payment_date: z.string().datetime().optional()
@@ -26,7 +26,7 @@ export const PaymentsController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const payment = await PaymentsService.getPaymentById(id);
       
       if (!payment) {
@@ -44,7 +44,8 @@ export const PaymentsController = {
     try {
       const parsedData = createPaymentSchema.parse(req.body);
       const payment = await PaymentsService.createPayment({
-        ...parsedData,
+        ...(parsedData as any),
+        created_by: req.user?.id,
         payment_date: parsedData.payment_date ? new Date(parsedData.payment_date) : undefined
       });
       res.status(201).json({ success: true, data: payment });

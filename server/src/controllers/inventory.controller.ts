@@ -3,7 +3,7 @@ import { InventoryService } from "../services/inventory.service.js";
 import { z } from "zod";
 
 const createInventorySchema = z.object({
-  sku: z.string().min(1, "SKU is required").max(50),
+  sku: z.string().min(1).max(50).optional(),
   name: z.string().min(1, "Name is required").max(150),
   category: z.string().min(1, "Category is required").max(50),
   description: z.string().optional(),
@@ -29,7 +29,7 @@ export const InventoryController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const item = await InventoryService.getItemById(id);
       
       if (!item) {
@@ -46,7 +46,7 @@ export const InventoryController = {
   async create(req: Request, res: Response) {
     try {
       const parsedData = createInventorySchema.parse(req.body);
-      const item = await InventoryService.createItem(parsedData);
+      const item = await InventoryService.createItem({ ...(parsedData as any), created_by: req.user?.id });
       res.status(201).json({ success: true, data: item });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -62,9 +62,9 @@ export const InventoryController = {
 
   async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const parsedData = updateInventorySchema.parse(req.body);
-      const item = await InventoryService.updateItem(id, parsedData);
+      const item = await InventoryService.updateItem(id, { ...(parsedData as any), created_by: req.user?.id });
       res.json({ success: true, data: item });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -80,9 +80,9 @@ export const InventoryController = {
 
   async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       await InventoryService.deleteItem(id);
-      res.json({ success: true, message: "Item deleted successfully" });
+      res.json({ success: true, message: "Item archived successfully" });
     } catch (error: any) {
       if (error.code === 'P2025') {
         return res.status(404).json({ success: false, error: "Item not found" });

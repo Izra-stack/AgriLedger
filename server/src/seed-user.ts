@@ -1,23 +1,39 @@
 import { prisma } from './config/prisma.js';
-import bcrypt from 'bcryptjs';
+import { firebaseAdminAuth } from './config/firebase.js';
 
 async function main() {
-  const passwordHash = await bcrypt.hash('password123', 10);
-  
+  const email = process.env.OWNER_EMAIL;
+
+  if (!email) {
+    throw new Error('OWNER_EMAIL must be set before seeding the owner profile');
+  }
+
+  let firebaseUser;
+  try {
+    firebaseUser = await firebaseAdminAuth.getUserByEmail(email);
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      throw new Error('Create the owner email/password account in Firebase Authentication first, then rerun this command', { cause: error });
+    }
+    throw error;
+  }
+
   await prisma.users.upsert({
-    where: { email: 'admin@agriledger.com' },
+    where: { email },
     update: {
-      password_hash: passwordHash
+      firebase_uid: firebaseUser.uid,
+      full_name: 'Josie Cabrera',
+      role: 'OWNER'
     },
     create: {
-      email: 'admin@agriledger.com',
-      password_hash: passwordHash,
-      full_name: 'Admin User',
+      email,
+      firebase_uid: firebaseUser.uid,
+      full_name: 'Josie Cabrera',
       role: 'OWNER'
     }
   });
 
-  console.log('Admin user seeded: admin@agriledger.com / password123');
+  console.log(`Owner Firebase profile seeded: ${email}`);
 }
 
 main()

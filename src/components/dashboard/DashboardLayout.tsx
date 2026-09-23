@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getInventory, getTransactions } from "../../lib/api";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export default function DashboardLayout() {
@@ -22,12 +26,46 @@ export default function DashboardLayout() {
   const location = useLocation();
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
+  const { data: transactions = [] } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: getTransactions,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+  });
+  const { data: inventory = [] } = useQuery({
+    queryKey: ["inventory"],
+    queryFn: getInventory,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  const notifications = useMemo(() => {
+    const items: string[] = [];
+    const outstandingTransactions = transactions.filter(
+      (transaction) => transaction.status !== "Paid" && transaction.balance > 0,
+    ).length;
+    const lowStockItems = inventory.filter(
+      (item) => item.stock <= item.reorderLevel,
+    ).length;
+
+    if (outstandingTransactions > 0) {
+      items.push(
+        `${outstandingTransactions} transaction${outstandingTransactions === 1 ? "" : "s"} with an outstanding balance`,
+      );
+    }
+    if (lowStockItems > 0) {
+      items.push(
+        `${lowStockItems} inventory item${lowStockItems === 1 ? "" : "s"} at or below reorder level`,
+      );
+    }
+    return items;
+  }, [inventory, transactions]);
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -162,7 +200,7 @@ export default function DashboardLayout() {
 
           <div className="flex items-center gap-3 md:gap-6">
             <div className="hidden md:block bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-xs font-semibold">
-              Today: Oct 24, 2024
+              Today: {format(new Date(), "MMM dd, yyyy")}
             </div>
             
             {/* Notifications */}
@@ -172,7 +210,9 @@ export default function DashboardLayout() {
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               >
                 <Bell size={20} />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#0F3D21] rounded-full border border-white"></span>
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#0F3D21] rounded-full border border-white"></span>
+                )}
               </button>
               
               {isNotificationsOpen && (
@@ -181,17 +221,19 @@ export default function DashboardLayout() {
                     <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
-                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50">
-                      <p className="text-xs text-gray-900 font-medium">Payment received from <span className="font-bold">Jose Mendoza</span></p>
-                      <p className="text-[10px] text-gray-500 mt-1">10 minutes ago</p>
-                    </div>
-                    <div className="px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                      <p className="text-xs text-gray-900 font-medium">Low stock alert: <span className="font-bold">Urea (46-0-0)</span></p>
-                      <p className="text-[10px] text-gray-500 mt-1">2 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-50 text-center">
-                    <button className="text-xs font-bold text-[#0F3D21] hover:underline">Mark all as read</button>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-xs text-gray-500">
+                        No notifications right now.
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-50">
+                        {notifications.map((notification) => (
+                          <div key={notification} className="px-4 py-3 text-xs text-gray-600">
+                            {notification}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

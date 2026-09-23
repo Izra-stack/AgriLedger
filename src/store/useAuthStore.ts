@@ -1,6 +1,8 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { api } from '../lib/api';
+import { create } from "zustand";
+import { signOut } from "firebase/auth";
+import { firebaseAuth } from "../lib/firebase";
+import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { loginUser } from "../lib/api";
 
 interface AuthState {
   user: {
@@ -9,35 +11,39 @@ interface AuthState {
     role: string;
     full_name: string;
   } | null;
-  token: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: any, token: string) => void;
+  isLoading: boolean;
+  setAuth: (user: any) => void;
+  initialize: () => () => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export const useAuthStore = create<AuthState>()((set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
-      setAuth: (user, token) => {
-        // Update axios headers globally
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        set({ user, token, isAuthenticated: true });
+      isLoading: true,
+      setAuth: (user) => {
+        set({ user, isAuthenticated: true, isLoading: false });
+      },
+      initialize: () => {
+        const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser: FirebaseUser | null) => {
+          if (!firebaseUser) {
+            set({ user: null, isAuthenticated: false, isLoading: false });
+            return;
+          }
+          try {
+            const token = await firebaseUser.getIdToken();
+            const session = await loginUser({ idToken: token });
+            set({ user: session.user, isAuthenticated: true, isLoading: false });
+          } catch {
+            await signOut(firebaseAuth);
+            set({ user: null, isAuthenticated: false, isLoading: false });
+          }
+        });
+        return unsubscribe;
       },
       logout: () => {
-        delete api.defaults.headers.common['Authorization'];
-        set({ user: null, token: null, isAuthenticated: false });
+        void signOut(firebaseAuth);
+        set({ user: null, isAuthenticated: false, isLoading: false });
       },
-    }),
-    {
-      name: 'auth-storage',
-      onRehydrateStorage: () => (state) => {
-        if (state?.token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${state.token}`;
-        }
-      },
-    }
-  )
-);
+    }));

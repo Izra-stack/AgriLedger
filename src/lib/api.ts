@@ -1,33 +1,31 @@
 import axios from 'axios';
+import { signOut } from 'firebase/auth';
+import { firebaseAuth } from './firebase';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 api.interceptors.request.use((config) => {
-  const authStorage = localStorage.getItem('auth-storage');
-  if (authStorage) {
-    try {
-      const parsed = JSON.parse(authStorage);
-      const token = parsed?.state?.token;
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-    } catch (e) {
-      console.error(e);
+  return (async () => {
+    const currentUser = firebaseAuth.currentUser;
+    if (currentUser) {
+      config.headers['Authorization'] = `Bearer ${await currentUser.getIdToken()}`;
+      return config;
     }
-  }
+
   return config;
+  })();
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('auth-storage');
+      void signOut(firebaseAuth);
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -42,8 +40,9 @@ const mapFarmer = (f: any) => ({
   phone: f.phone || '',
   location: f.address || '',
   status: f.status === 'ACTIVE' ? 'Active' : 'Inactive',
-  area: 0, // Not in DB
-  commitment: 'Both', // Not in DB
+  area: Number(f.area || 0),
+  commitment: f.commitment === 'CASH_ASSISTANCE' ? 'Cash Assistance' : f.commitment === 'FARM_INPUT' ? 'Farm Input' : 'Both',
+  notes: f.notes || '',
 });
 
 const mapInventory = (i: any) => ({
@@ -62,7 +61,16 @@ const mapTransaction = (t: any) => ({
   transactionCode: t.transaction_code,
   date: t.transaction_date,
   farmerId: t.farmer_id,
-  type: t.type === 'CASH_ASSISTANCE' ? 'Cash Advance' : t.type === 'FERTILIZER' ? 'Fertilizer' : 'Other',
+  type: ({
+    CASH_ASSISTANCE: 'Cash Advance',
+    FERTILIZER: 'Fertilizer',
+    MIXED_PACKAGE: 'Mixed Package',
+    LABOR: 'Labor',
+    SEEDS: 'Seeds',
+    CHEMICALS: 'Chemicals',
+  } as Record<string, string>)[t.type] || 'Other',
+  description: t.description || '',
+  paidAmount: Number(t.paid_amount || 0),
   amount: Number(t.amount),
   balance: Number(t.balance),
   status: t.status === 'PAID' ? 'Paid' : t.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
@@ -76,10 +84,10 @@ const mapPayment = (p: any) => ({
   transactionId: p.transaction_id,
   amount: Number(p.amount),
   notes: p.notes,
-  farmerName: p.farmers ? `${p.farmers.first_name} ${p.farmers.last_name}` : "Unknown Farmer",
-  txStatus: "Paid", // Backend doesn't return tx status yet, but UI shows Settled usually
-  method: p.payment_method === 'CASH' ? 'Cash' : 'GCash',
-  totalDue: Number(p.amount) // Mock total due since we don't have it joined
+  farmerName: p.farmers ? `${p.farmers.first_name} ${p.farmers.last_name}` : undefined,
+  txStatus: p.transactions?.status === 'PAID' ? 'Paid' : p.transactions?.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
+  method: 'Cash',
+  totalDue: Number(p.transactions?.amount ?? 0)
 });
 
 // Farmers API
@@ -142,11 +150,7 @@ export const getDashboardAnalytics = async () => (await api.get('/dashboard/anal
 
 // Auth API
 export const loginUser = async (payload: any) => {
-  const { data } = await api.post('/auth/login', payload);
-  return data.data;
-};
-export const registerUser = async (payload: any) => {
-  const { data } = await api.post('/auth/register', payload);
+  const { data } = await api.post('/auth/firebase-session', payload);
   return data.data;
 };
 

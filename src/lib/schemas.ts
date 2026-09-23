@@ -8,6 +8,9 @@ export const farmerSchema = z.object({
   area: z.coerce.number().min(0.1, 'Area must be at least 0.1'),
   commitment: z.enum(['Cash Assistance', 'Farm Input', 'Both']),
   notes: z.string().optional(),
+}).refine((value) => value.name.trim().split(/\s+/).length >= 2, {
+  message: 'Please enter a first and last name',
+  path: ['name'],
 });
 
 export const transactionSchema = z.object({

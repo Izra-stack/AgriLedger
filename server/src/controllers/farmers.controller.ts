@@ -3,14 +3,17 @@ import { FarmersService } from "../services/farmers.service.js";
 import { z } from "zod";
 
 const createFarmerSchema = z.object({
-  farmer_code: z.string().min(1, "Farmer code is required").max(30),
+  farmer_code: z.string().min(1).max(30).optional(),
   first_name: z.string().min(1, "First name is required").max(100),
   last_name: z.string().min(1, "Last name is required").max(100),
   middle_name: z.string().max(100).optional(),
   phone: z.string().max(30).optional(),
   address: z.string().optional(),
   farm_location: z.string().optional(),
-  status: z.string().max(20).optional()
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+  area: z.number().min(0).max(999999).default(0),
+  commitment: z.enum(["CASH_ASSISTANCE", "FARM_INPUT", "BOTH"]).default("BOTH"),
+  notes: z.string().max(2000).optional()
 });
 
 const updateFarmerSchema = createFarmerSchema.partial();
@@ -28,7 +31,7 @@ export const FarmersController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const farmer = await FarmersService.getFarmerById(id);
       
       if (!farmer) {
@@ -45,7 +48,8 @@ export const FarmersController = {
   async create(req: Request, res: Response) {
     try {
       const parsedData = createFarmerSchema.parse(req.body);
-      const farmer = await FarmersService.createFarmer(parsedData);
+      if (!req.user) return res.status(403).json({ success: false, error: "Owner authentication required" });
+      const farmer = await FarmersService.createFarmer({ ...(parsedData as any), created_by: req.user.id });
       res.status(201).json({ success: true, data: farmer });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -61,9 +65,9 @@ export const FarmersController = {
 
   async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const parsedData = updateFarmerSchema.parse(req.body);
-      const farmer = await FarmersService.updateFarmer(id, parsedData);
+      const farmer = await FarmersService.updateFarmer(id, parsedData as any);
       res.json({ success: true, data: farmer });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -79,9 +83,9 @@ export const FarmersController = {
 
   async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       await FarmersService.deleteFarmer(id);
-      res.json({ success: true, message: "Farmer deleted successfully" });
+      res.json({ success: true, message: "Farmer archived successfully" });
     } catch (error: any) {
       if (error.code === 'P2025') {
         return res.status(404).json({ success: false, error: "Farmer not found" });

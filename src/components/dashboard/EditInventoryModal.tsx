@@ -9,7 +9,7 @@ import { Button } from "../ui/Button";
 import { inventorySchema, InventoryFormValues } from "../../lib/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateInventoryItem } from "../../lib/api";
-import { InventoryItem } from "../../store/useStore";
+import { InventoryItem } from "../../types";
 
 interface EditInventoryModalProps {
   isOpen: boolean;

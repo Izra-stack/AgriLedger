@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { QrCode, Smartphone, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
@@ -18,7 +18,6 @@ interface RecordPaymentModalProps {
 }
 
 export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
   const queryClient = useQueryClient();
   const { data: allFarmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
   const { data: allTransactions = [] } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
@@ -79,7 +78,6 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
         transactionId: "",
         amount: 0
       });
-      setPaymentMethod('cash');
     }
   }, [isOpen, reset]);
 
@@ -90,12 +88,11 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
     }
 
     createMutation.mutate({
-      payment_code: `PAY-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
       farmer_id: data.farmerId,
       transaction_id: data.transactionId,
       amount: data.amount,
-      payment_method: paymentMethod === 'gcash' ? 'GCASH' : 'CASH',
-      notes: data.notes ? `[${paymentMethod.toUpperCase()}] ${data.notes}` : undefined,
+      payment_method: 'CASH',
+      notes: data.notes,
       payment_date: new Date(data.date)
     });
   };
@@ -196,99 +193,22 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
         {/* Step 2: Payment Details (Only show if an unpaid transaction is selected) */}
         {selectedTx && (
           <>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">Payment Method</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-lg border text-sm font-bold transition-colors ${
-                    paymentMethod === 'cash' 
-                      ? 'bg-[#EAF7EF] border-[#154226] text-[#154226]' 
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  Cash
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('gcash')}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-lg border text-sm font-bold transition-colors ${
-                    paymentMethod === 'gcash' 
-                      ? 'bg-white border-[#154226] text-gray-900' 
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="w-5 h-5 rounded-full bg-[#007DFE] text-white flex items-center justify-center text-[10px] font-bold">G</div>
-                  GCash (QR Pay)
-                </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-2">Cash Amount Received (₱)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g. 5000"
+                  {...register("amount", {
+                    valueAsNumber: true,
+                    validate: (val) => val <= selectedTx.balance || 'Cannot exceed remaining balance'
+                  })}
+                  className={errors.amount ? "border-red-500 focus:border-red-500" : ""}
+                />
+                {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
               </div>
             </div>
-
-            {paymentMethod === 'cash' ? (
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-end mb-2">
-                    <label className="block text-xs font-bold text-gray-700">Amount Paid (₱)</label>
-                  </div>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="e.g. 5000"
-                    {...register("amount", { 
-                      valueAsNumber: true,
-                      validate: (val) => val <= selectedTx.balance || 'Cannot exceed remaining balance'
-                    })}
-                    className={errors.amount ? "border-red-500 focus:border-red-500" : ""}
-                  />
-                  {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
-                </div>
-              </div>
-            ) : (
-              <div className="border border-blue-200 border-dashed rounded-xl bg-[#F8FAFC] p-5">
-                <div className="flex items-start mb-6">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#007DFE] text-white flex items-center justify-center text-sm font-bold mt-1">G</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-bold text-gray-900">Scan to Pay with GCash</span>
-                        <span className="bg-blue-100 text-[#007DFE] text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Instant Credit</span>
-                      </div>
-                      <div className="text-[10px] text-[#007DFE] font-medium">Merchant: AGRILedger - Davao Hub</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-6 items-center">
-                  <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
-                    <div className="w-28 h-28 border border-gray-100 rounded-lg flex items-center justify-center bg-gray-50 relative overflow-hidden">
-                       <QrCode size={80} className="text-gray-800" strokeWidth={1.5} />
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-2">
-                      <Smartphone size={16} className="text-[#007DFE]" /> Scan via GCash App
-                    </h4>
-                    <p className="text-[11px] text-gray-500 leading-relaxed mb-4">
-                      Have the farmer scan this QR code using their GCash app to complete payment. Funds settle immediately.
-                    </p>
-                    <div className="mb-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="Enter confirmed amount..."
-                        {...register("amount", { 
-                          valueAsNumber: true,
-                          validate: (val) => val <= selectedTx.balance || 'Cannot exceed remaining balance'
-                        })}
-                        className={`!py-1.5 !text-xs ${errors.amount ? "border-red-500 focus:border-red-500" : ""}`}
-                      />
-                      {errors.amount && <p className="text-red-500 text-[10px] mt-1">{errors.amount.message}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Display Remaining Balance Projection */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex items-center gap-3">

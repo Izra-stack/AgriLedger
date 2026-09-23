@@ -88,31 +88,31 @@ export default function Footer() {
                 Ledger Suite
               </h4>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Farmer Records
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Input Inventory
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Cash Subsidies
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Farm Expenses
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Harvest Earnings
@@ -124,31 +124,31 @@ export default function Footer() {
                 Compliance
               </h4>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Farm Guidelines
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Financial Checking
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Fund Records
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Financial Reports
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Record History
@@ -166,25 +166,22 @@ export default function Footer() {
                 Owner Portal
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Data Privacy
               </Link>
+              <span className="text-white/50 text-sm" title="Firebase Storage is not enabled in this version">
+                File Storage (not enabled)
+              </span>
               <Link
-                to="/demo"
-                className="text-white/70 hover:text-white text-sm transition-colors"
-              >
-                Secure Storage
-              </Link>
-              <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Account Security
               </Link>
               <Link
-                to="/demo"
+                to="/"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
                 Help & Support
@@ -205,7 +202,7 @@ export default function Footer() {
               Terms & Privacy Policy
             </button>
             <Link
-              to="/demo"
+              to="/"
               className="text-white/50 hover:text-white/80 text-xs transition-colors"
             >
               Security Overview

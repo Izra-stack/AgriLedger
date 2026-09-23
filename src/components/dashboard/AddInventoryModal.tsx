@@ -49,12 +49,7 @@ export default function AddInventoryModal({ isOpen, onClose }: AddInventoryModal
   }, [isOpen, reset]);
 
   const onSubmit = (data: InventoryFormValues) => {
-    // Generate a random SKU since form doesn't ask for it
-    const prefix = data.category === 'Fertilizer' ? 'FERT' : data.category === 'Seeds' ? 'SEED' : 'ITEM';
-    const sku = `${prefix}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-    
     createMutation.mutate({
-      sku,
       name: data.name,
       category: data.category,
       unit: "unit",

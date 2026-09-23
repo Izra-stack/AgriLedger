@@ -5,6 +5,8 @@ import { useMutation } from "@tanstack/react-query";
 import { loginUser } from "../lib/api";
 import { useAuthStore } from "../store/useAuthStore";
 import { toast } from "sonner";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { firebaseAuth } from "../lib/firebase";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,14 +17,37 @@ export default function LoginPage() {
   const setAuth = useAuthStore(state => state.setAuth);
 
   const loginMutation = useMutation({
-    mutationFn: loginUser,
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+      const idToken = await credential.user.getIdToken();
+      const data = await loginUser({ idToken });
+      return data;
+    },
     onSuccess: (data) => {
-      setAuth(data.user, data.token);
+      setAuth(data.user);
       toast.success("Welcome back!");
       navigate("/dashboard");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Invalid credentials");
+      const firebaseCode = error?.code as string | undefined;
+      const firebaseMessages: Record<string, string> = {
+        "auth/invalid-credential": "The email or password is incorrect.",
+        "auth/invalid-login-credentials": "The email or password is incorrect.",
+        "auth/user-not-found": "The email or password is incorrect.",
+        "auth/wrong-password": "The email or password is incorrect.",
+        "auth/too-many-requests": "Too many attempts. Please wait and try again.",
+      };
+
+      if (error?.request && !error?.response) {
+        toast.error("The AgriLedger server is not running. Start both the frontend and API, then try again.");
+        return;
+      }
+
+      toast.error(
+        error.response?.data?.error ||
+          (firebaseCode && firebaseMessages[firebaseCode]) ||
+          "Unable to sign in. Please try again.",
+      );
     }
   });
 

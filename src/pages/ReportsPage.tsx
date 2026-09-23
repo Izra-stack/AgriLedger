@@ -26,7 +26,7 @@ export default function ReportsPage() {
   const totalLedgerValue = summary?.totalLedgerValue || 0;
   const totalOutstanding = summary?.totalOutstanding || 0;
   const totalCollected = summary?.totalCollected || 0;
-  const collectionRate = summary?.collectionRate ? Number(summary.collectionRate).toFixed(1) : "0.0";
+  const profitMargin = Number(summary?.profitMargin || 0);
 
   // Chart Data
   const monthlyCollections = analytics?.monthlyCollections || [];
@@ -56,7 +56,7 @@ export default function ReportsPage() {
           { title: 'Total Ledger Value', amount: `₱${totalLedgerValue.toLocaleString()}`, icon: TrendingUp, color: 'text-[#0F3D21]' },
           { title: 'Total Collected', amount: `₱${totalCollected.toLocaleString()}`, icon: DollarSign, color: 'text-[#0F3D21]' },
           { title: 'Outstanding Balance', amount: `₱${totalOutstanding.toLocaleString()}`, icon: TrendingDown, color: 'text-red-600' },
-          { title: 'Collection Rate', amount: `${collectionRate}%`, icon: Activity, color: 'text-gray-900' },
+          { title: 'Gross Profit Margin', amount: `${profitMargin.toFixed(1)}%`, icon: Activity, color: 'text-gray-900' },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (

@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
+  console.error("Unhandled API error", err);
   
   res.status(500).json({
     success: false,
-    error: err.message || "Internal Server Error"
+    error: "Internal Server Error"
   });
 };

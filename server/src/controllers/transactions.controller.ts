@@ -3,14 +3,14 @@ import { TransactionsService } from "../services/transactions.service.js";
 import { z } from "zod";
 
 const createTransactionSchema = z.object({
-  transaction_code: z.string().min(1, "Transaction code is required").max(30),
+  transaction_code: z.string().min(1).max(30).optional(),
   farmer_id: z.string().uuid("Invalid farmer ID"),
   inventory_item_id: z.string().uuid("Invalid inventory ID").optional(),
   type: z.string().min(1, "Type is required").max(30),
   description: z.string().optional(),
   quantity: z.number().min(0, "Quantity cannot be negative").optional(),
   unit_price: z.number().min(0, "Unit price cannot be negative").optional(),
-  amount: z.number().min(0, "Amount cannot be negative"),
+  amount: z.number().positive("Amount must be greater than zero"),
   transaction_date: z.string().datetime().optional()
 });
 
@@ -19,7 +19,7 @@ const updateTransactionSchema = z.object({
   description: z.string().optional(),
   quantity: z.number().min(0).optional(),
   unit_price: z.number().min(0).optional(),
-  amount: z.number().min(0).optional()
+  amount: z.number().positive().optional()
 });
 
 export const TransactionsController = {
@@ -35,7 +35,7 @@ export const TransactionsController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const tx = await TransactionsService.getTransactionById(id);
       
       if (!tx) {
@@ -53,7 +53,8 @@ export const TransactionsController = {
     try {
       const parsedData = createTransactionSchema.parse(req.body);
       const tx = await TransactionsService.createTransaction({
-        ...parsedData,
+        ...(parsedData as any),
+        created_by: req.user?.id,
         transaction_date: parsedData.transaction_date ? new Date(parsedData.transaction_date) : undefined
       });
       res.status(201).json({ success: true, data: tx });
@@ -74,7 +75,7 @@ export const TransactionsController = {
 
   async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const parsedData = updateTransactionSchema.parse(req.body);
       const tx = await TransactionsService.updateTransaction(id, parsedData);
       res.json({ success: true, data: tx });

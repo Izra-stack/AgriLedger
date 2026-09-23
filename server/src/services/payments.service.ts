@@ -1,30 +1,32 @@
 import { prisma } from "../config/prisma.js";
-import { Prisma } from "../../../generated/prisma/client";
+import { Prisma } from "../../../generated/prisma/client.js";
+import { randomUUID } from "node:crypto";
 
 export const PaymentsService = {
   async getAllPayments() {
     return prisma.payments.findMany({
+      where: { archived_at: null },
       orderBy: { payment_date: 'desc' },
       include: {
         farmers: {
           select: { first_name: true, last_name: true, farmer_code: true }
         },
         transactions: {
-          select: { transaction_code: true, type: true }
+          select: { transaction_code: true, type: true, amount: true, status: true }
         }
       }
     });
   },
 
   async getPaymentById(id: string) {
-    return prisma.payments.findUnique({
+    return prisma.payments.findFirst({
       where: { id },
       include: { farmers: true, transactions: true }
     });
   },
 
   async createPayment(data: {
-    payment_code: string;
+    payment_code?: string;
     farmer_id: string;
     transaction_id: string;
     amount: number;
@@ -32,10 +34,11 @@ export const PaymentsService = {
     reference_number?: string;
     notes?: string;
     payment_date?: Date;
+    created_by?: string;
   }) {
     return prisma.$transaction(async (tx) => {
       // 1. Get the transaction to check balance
-      const transaction = await tx.transactions.findUnique({
+      const transaction = await tx.transactions.findFirst({
         where: { id: data.transaction_id }
       });
 
@@ -47,6 +50,7 @@ export const PaymentsService = {
         throw new Error("Transaction does not belong to the specified farmer");
       }
 
+      if (transaction.archived_at) throw new Error("Transaction is archived");
       const paymentAmount = data.amount;
       const currentBalance = Number(transaction.balance);
       const currentPaid = Number(transaction.paid_amount);
@@ -65,7 +69,7 @@ export const PaymentsService = {
       // 2. Create the payment
       const payment = await tx.payments.create({
         data: {
-          payment_code: data.payment_code,
+          payment_code: data.payment_code || `PAY-${randomUUID().slice(0, 8).toUpperCase()}`,
           farmer_id: data.farmer_id,
           transaction_id: data.transaction_id,
           amount: new Prisma.Decimal(paymentAmount),
@@ -88,6 +92,6 @@ export const PaymentsService = {
       });
 
       return payment;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 };

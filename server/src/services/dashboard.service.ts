@@ -4,34 +4,53 @@ export const DashboardService = {
   async getSummary() {
     // 1. Total Ledger Value (Sum of all transaction amounts)
     const ledgerResult = await prisma.transactions.aggregate({
+      where: { archived_at: null },
       _sum: { amount: true, balance: true }
     });
     
     // 2. Total Collected (Sum of all payments)
     const paymentsResult = await prisma.payments.aggregate({
+      where: { archived_at: null },
       _sum: { amount: true }
     });
 
     // 3. Active Farmers
     const activeFarmers = await prisma.farmers.count({
-      where: { status: 'ACTIVE' } // Assuming 'ACTIVE' is the status in DB
+      where: { status: 'ACTIVE', archived_at: null }
     });
 
     // 4. Total Cash Advances
     const cashAdvancesResult = await prisma.transactions.aggregate({
-      where: { type: 'CASH_ASSISTANCE' },
-      _sum: { amount: true }
+      where: { type: 'CASH_ASSISTANCE', archived_at: null },
+      _sum: { balance: true }
+    });
+
+    const inputTransactions = await prisma.transactions.findMany({
+      where: { inventory_item_id: { not: null }, archived_at: null },
+      select: {
+        quantity: true,
+        inventory_items: { select: { unit_cost: true } },
+      },
     });
 
     const totalLedgerValue = Number(ledgerResult._sum.amount || 0);
     const totalOutstanding = Number(ledgerResult._sum.balance || 0);
     const totalCollected = Number(paymentsResult._sum.amount || 0);
-    const totalCashAdvances = Number(cashAdvancesResult._sum.amount || 0);
+    const totalCashAdvances = Number(cashAdvancesResult._sum.balance || 0);
+    const totalCost = inputTransactions.reduce(
+      (sum, tx) => sum + Number(tx.quantity || 0) * Number(tx.inventory_items?.unit_cost || 0),
+      0,
+    );
+    const grossProfit = totalCollected - totalCost;
 
     return {
       totalLedgerValue,
       totalOutstanding,
       totalCollected,
+      totalRevenue: totalCollected,
+      totalCost,
+      grossProfit,
+      profitMargin: totalCollected > 0 ? (grossProfit / totalCollected) * 100 : 0,
       activeFarmers,
       totalCashAdvances,
       collectionRate: totalLedgerValue > 0 ? (totalCollected / totalLedgerValue) * 100 : 0
@@ -43,6 +62,7 @@ export const DashboardService = {
     // Prisma does not have native Group By Month for dates easily across all databases, 
     // so we can fetch payments and group them in JS (fine for small to medium scale)
     const payments = await prisma.payments.findMany({
+      where: { archived_at: null },
       select: { amount: true, payment_date: true }
     });
 
@@ -62,6 +82,7 @@ export const DashboardService = {
 
     // 2. Transaction Types Data
     const typesResult = await prisma.transactions.groupBy({
+      where: { archived_at: null },
       by: ['type'],
       _sum: { amount: true }
     });

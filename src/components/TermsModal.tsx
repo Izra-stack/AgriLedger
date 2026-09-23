@@ -26,7 +26,7 @@ export default function TermsModal({ isOpen, onClose, onAccept }: TermsModalProp
     {
       num: '3',
       title: 'System Limitations',
-      desc: 'AgriLedger is a financial and transaction-tracking system and does not directly process online payments, bank transfers, or external loans.'
+      desc: 'AgriLedger is a financial and transaction-tracking system for recording cash settlements, farm assistance, and business records. It does not initiate bank transfers or external loans.'
     },
     {
       num: '4',

@@ -7,21 +7,31 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { farmerSchema, FarmerFormValues } from "../../lib/schemas";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFarmer } from "../../lib/api";
+import { createFarmer, updateFarmer } from "../../lib/api";
 
 interface AddFarmerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  farmer?: {
+    id: string;
+    name: string;
+    phone: string;
+    location: string;
+    status: "Active" | "Inactive";
+    area: number;
+    commitment: "Cash Assistance" | "Farm Input" | "Both";
+    notes?: string;
+  } | null;
 }
 
-export default function AddFarmerModal({ isOpen, onClose }: AddFarmerModalProps) {
+export default function AddFarmerModal({ isOpen, onClose, farmer = null }: AddFarmerModalProps) {
   const queryClient = useQueryClient();
   
   const createMutation = useMutation({
-    mutationFn: createFarmer,
+    mutationFn: (payload: any) => farmer ? updateFarmer({ id: farmer.id, payload }) : createFarmer(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      toast.success("Farmer added successfully!");
+      toast.success(farmer ? "Farmer updated successfully!" : "Farmer added successfully!");
       onClose();
     },
     onError: (error: any) => {
@@ -48,20 +58,30 @@ export default function AddFarmerModal({ isOpen, onClose }: AddFarmerModalProps)
 
   useEffect(() => {
     if (isOpen) {
-      reset();
+      reset(farmer ? {
+        name: farmer.name,
+        phone: farmer.phone,
+        location: farmer.location,
+        status: farmer.status,
+        area: farmer.area,
+        commitment: farmer.commitment,
+        notes: farmer.notes || "",
+      } : undefined);
     }
-  }, [isOpen, reset]);
+  }, [isOpen, farmer, reset]);
 
   const onSubmit = (data: FarmerFormValues) => {
-    // We only have first_name and last_name in backend, let's split the name
     const [first, ...rest] = data.name.trim().split(' ');
     
     createMutation.mutate({
-      farmer_code: `FRM-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      ...(farmer ? {} : {}),
       first_name: first || 'Unknown',
-      last_name: rest.join(' ') || 'Unknown',
+      last_name: rest.join(' '),
       phone: data.phone,
       address: data.location,
+      area: data.area,
+      commitment: data.commitment === 'Cash Assistance' ? 'CASH_ASSISTANCE' : data.commitment === 'Farm Input' ? 'FARM_INPUT' : 'BOTH',
+      notes: data.notes,
       status: data.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
     });
   };
@@ -70,7 +90,7 @@ export default function AddFarmerModal({ isOpen, onClose }: AddFarmerModalProps)
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add New Farmer"
+      title={farmer ? "Edit Farmer" : "Add New Farmer"}
       maxWidth="md"
       footer={
         <>
@@ -82,7 +102,7 @@ export default function AddFarmerModal({ isOpen, onClose }: AddFarmerModalProps)
             disabled={isSubmitting}
             className="min-w-[120px]"
           >
-            {isSubmitting ? "Saving..." : "Save Farmer"}
+            {isSubmitting ? "Saving..." : farmer ? "Save Changes" : "Save Farmer"}
           </Button>
         </>
       }

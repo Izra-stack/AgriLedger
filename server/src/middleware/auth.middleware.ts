@@ -1,5 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { NextFunction, Request, Response } from "express";
+import { firebaseAdminAuth } from "../config/firebase.js";
+import { prisma } from "../config/prisma.js";
 
 // Extend Request interface to include user
 declare module "express-serve-static-core" {
@@ -12,26 +13,44 @@ declare module "express-serve-static-core" {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_super_secret_key_change_me_in_prod";
-
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ success: false, error: "Unauthorized: No token provided" });
+    return res
+      .status(401)
+      .json({ success: false, error: "Unauthorized: No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
-
+  const token = authHeader.slice("Bearer ".length).trim();
+  // email valid
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role
-    };
+    const decoded = await firebaseAdminAuth.verifyIdToken(token);
+    const user = await prisma.users.findUnique({
+      where: { firebase_uid: decoded.uid },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(403).json({ success: false, error: "Forbidden: Owner profile not found" });
+    }
+
+    req.user = user;
     next();
-  } catch (error) {
-    return res.status(403).json({ success: false, error: "Forbidden: Invalid or expired token" });
+  } catch {
+    return res
+      .status(403)
+      .json({ success: false, error: "Forbidden: Invalid or expired token" });
   }
+};
+
+export const requireRole = (...roles: string[]) => (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ success: false, error: "Forbidden: insufficient role" });
+  }
+  next();
 };

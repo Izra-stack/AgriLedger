@@ -1,4 +1,5 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { useEffect } from "react";
 import { Toaster } from "sonner";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
@@ -17,14 +18,18 @@ import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isLoading = useAuthStore(state => state.isLoading);
+  if (isLoading) return <div className="min-h-screen grid place-items-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
 function App() {
+  const initialize = useAuthStore(state => state.initialize);
+  useEffect(() => initialize(), [initialize]);
   return (
     <>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

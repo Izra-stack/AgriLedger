@@ -28,7 +28,7 @@ export default function TransactionsPage() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx: any) => {
-      const farmerName = tx.farmerName || "Unknown Farmer";
+      const farmerName = tx.farmerName || "";
       const matchesSearch = tx.transactionCode?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             farmerName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = typeFilter === "All" || tx.type === typeFilter;
@@ -108,7 +108,7 @@ export default function TransactionsPage() {
                 <TableCell className="text-gray-500 whitespace-nowrap">
                   {format(new Date(trx.date), 'MMM dd, yyyy h:mm a')}
                 </TableCell>
-                <TableCell className="font-bold text-gray-900">{trx.farmerName || "Unknown Farmer"}</TableCell>
+                <TableCell className="font-bold text-gray-900">{trx.farmerName || "—"}</TableCell>
                 <TableCell className="text-gray-500">
                   <div className="flex items-center gap-2">
                     <FileText size={14} className="text-gray-400" /> {trx.transactionCode || trx.id}

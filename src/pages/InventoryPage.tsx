@@ -4,7 +4,7 @@ import AddInventoryModal from '../components/dashboard/AddInventoryModal';
 import EditInventoryModal from '../components/dashboard/EditInventoryModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getInventory, deleteInventoryItem as deleteInventoryItemApi } from '../lib/api';
-import { InventoryItem } from '../store/useStore';
+import { InventoryItem } from '../types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -145,7 +145,7 @@ export default function InventoryPage() {
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-bold text-gray-900">{item.name}</TableCell>
-                    <TableCell className="text-gray-500">{item.id}</TableCell>
+                    <TableCell className="text-gray-500">{item.sku}</TableCell>
                     <TableCell className="text-gray-500">{item.category}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3 w-40">

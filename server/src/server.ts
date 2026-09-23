@@ -11,10 +11,13 @@ import settingsRoutes from "./routes/settings.routes.js";
 import { requireAuth } from "./middleware/auth.middleware.js";
 
 const app = express();
-const PORT = 5000;
+const PORT = Number(process.env.PORT || 5000);
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  credentials: false,
+}));
+app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/farmers", requireAuth, farmersRoutes);
@@ -31,7 +34,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/db-test", async (_req, res) => {
+app.get("/api/db-test", requireAuth, async (_req, res) => {
   try {
     const result = await prisma.$queryRaw<
       { current_database: string; current_schema: string }[]
