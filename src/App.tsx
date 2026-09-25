@@ -21,6 +21,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isLoading = useAuthStore(state => state.isLoading);
   if (isLoading) return <div className="min-h-screen grid place-items-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (useAuthStore.getState().user?.role !== "OWNER") return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 

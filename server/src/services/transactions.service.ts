@@ -9,7 +9,7 @@ export const TransactionsService = {
       orderBy: { transaction_date: 'desc' },
       include: {
         farmers: {
-          select: { first_name: true, last_name: true, farmer_code: true }
+          select: { full_name: true, farmer_code: true }
         },
         inventory_items: {
           select: { name: true, sku: true }

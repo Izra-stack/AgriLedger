@@ -46,7 +46,7 @@ export default function InventoryPage() {
     }
   });
 
-  const categories = ['All Items', 'Fertilizer', 'Seeds', 'Chemicals'];
+  const categories = ['All Items', 'Fertilizer', 'Seeds', 'Chemicals', 'Pesticides'];
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => {

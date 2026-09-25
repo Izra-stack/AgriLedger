@@ -3,12 +3,38 @@ import { prisma } from "../config/prisma.js";
 
 export const AuthService = {
   async syncFirebaseUser(decoded: DecodedIdToken) {
-    const email = decoded.email?.toLowerCase();
-    if (!email) throw new Error("Firebase account has no verified email");
-    const existing = await prisma.users.findFirst({ where: { OR: [{ firebase_uid: decoded.uid }, { email }] } });
-    const user = existing
-      ? await prisma.users.update({ where: { id: existing.id }, data: { firebase_uid: decoded.uid, email, full_name: decoded.name || existing.full_name, updated_at: new Date() } })
-      : await prisma.users.create({ data: { email, firebase_uid: decoded.uid, full_name: decoded.name || email, role: "STAFF" } });
+    let user = await prisma.users.findUnique({
+      where: { firebase_uid: decoded.uid },
+      select: { id: true, email: true, firebase_uid: true, full_name: true, role: true },
+    });
+
+    if (!user && decoded.email) {
+      const existingByEmail = await prisma.users.findUnique({
+        where: { email: decoded.email },
+      });
+
+      if (existingByEmail) {
+        user = await prisma.users.update({
+          where: { id: existingByEmail.id },
+          data: { firebase_uid: decoded.uid },
+          select: { id: true, email: true, firebase_uid: true, full_name: true, role: true },
+        });
+      } else {
+        user = await prisma.users.create({
+          data: {
+            firebase_uid: decoded.uid,
+            email: decoded.email,
+            full_name: decoded.name || decoded.email.split("@")[0] || "Owner",
+            role: "OWNER",
+          },
+          select: { id: true, email: true, firebase_uid: true, full_name: true, role: true },
+        });
+      }
+    }
+
+    if (!user) {
+      throw new Error("Forbidden: no AgriLedger owner profile is linked to this Firebase account");
+    }
 
     return { user };
   },

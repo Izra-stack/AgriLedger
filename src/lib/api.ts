@@ -36,7 +36,7 @@ api.interceptors.response.use(
 const mapFarmer = (f: any) => ({
   id: f.id,
   farmerCode: f.farmer_code,
-  name: `${f.first_name} ${f.last_name}`,
+  name: f.full_name || '',
   phone: f.phone || '',
   location: f.address || '',
   status: f.status === 'ACTIVE' ? 'Active' : 'Inactive',
@@ -74,7 +74,7 @@ const mapTransaction = (t: any) => ({
   amount: Number(t.amount),
   balance: Number(t.balance),
   status: t.status === 'PAID' ? 'Paid' : t.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
-  farmerName: t.farmers ? `${t.farmers.first_name} ${t.farmers.last_name}` : undefined,
+  farmerName: t.farmers ? t.farmers.full_name : undefined,
 });
 
 const mapPayment = (p: any) => ({
@@ -84,7 +84,7 @@ const mapPayment = (p: any) => ({
   transactionId: p.transaction_id,
   amount: Number(p.amount),
   notes: p.notes,
-  farmerName: p.farmers ? `${p.farmers.first_name} ${p.farmers.last_name}` : undefined,
+  farmerName: p.farmers ? p.farmers.full_name : undefined,
   txStatus: p.transactions?.status === 'PAID' ? 'Paid' : p.transactions?.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
   method: 'Cash',
   totalDue: Number(p.transactions?.amount ?? 0)

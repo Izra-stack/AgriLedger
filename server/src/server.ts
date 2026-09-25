@@ -8,7 +8,7 @@ import paymentsRoutes from "./routes/payments.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
-import { requireAuth } from "./middleware/auth.middleware.js";
+import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
@@ -20,12 +20,12 @@ app.use(cors({
 app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/auth", authRoutes);
-app.use("/api/farmers", requireAuth, farmersRoutes);
-app.use("/api/inventory", requireAuth, inventoryRoutes);
-app.use("/api/transactions", requireAuth, transactionsRoutes);
-app.use("/api/payments", requireAuth, paymentsRoutes);
-app.use("/api/dashboard", requireAuth, dashboardRoutes);
-app.use("/api/settings", requireAuth, settingsRoutes);
+app.use("/api/farmers", requireAuth, requireRole("OWNER"), farmersRoutes);
+app.use("/api/inventory", requireAuth, requireRole("OWNER"), inventoryRoutes);
+app.use("/api/transactions", requireAuth, requireRole("OWNER"), transactionsRoutes);
+app.use("/api/payments", requireAuth, requireRole("OWNER"), paymentsRoutes);
+app.use("/api/dashboard", requireAuth, requireRole("OWNER"), dashboardRoutes);
+app.use("/api/settings", requireAuth, requireRole("OWNER"), settingsRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -34,7 +34,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-app.get("/api/db-test", requireAuth, async (_req, res) => {
+app.get("/api/db-test", requireAuth, requireRole("OWNER"), async (_req, res) => {
   try {
     const result = await prisma.$queryRaw<
       { current_database: string; current_schema: string }[]

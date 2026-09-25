@@ -4,12 +4,9 @@ import { z } from "zod";
 
 const createFarmerSchema = z.object({
   farmer_code: z.string().min(1).max(30).optional(),
-  first_name: z.string().min(1, "First name is required").max(100),
-  last_name: z.string().min(1, "Last name is required").max(100),
-  middle_name: z.string().max(100).optional(),
+  full_name: z.string().min(1, "Full name is required").max(250),
   phone: z.string().max(30).optional(),
   address: z.string().optional(),
-  farm_location: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   area: z.number().min(0).max(999999).default(0),
   commitment: z.enum(["CASH_ASSISTANCE", "FARM_INPUT", "BOTH"]).default("BOTH"),

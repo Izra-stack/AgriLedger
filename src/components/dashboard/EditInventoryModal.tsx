@@ -115,7 +115,7 @@ export default function EditInventoryModal({ isOpen, onClose, item }: EditInvent
             <option value="Fertilizer">Fertilizer</option>
             <option value="Seeds">Seeds</option>
             <option value="Chemicals">Chemicals</option>
-            <option value="Equipment">Equipment</option>
+            <option value="Pesticides">Pesticides</option>
           </Select>
           {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
         </div>

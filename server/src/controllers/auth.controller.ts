@@ -12,9 +12,13 @@ export const AuthController = {
 
       const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
       const result = await AuthService.syncFirebaseUser(decoded);
+      if (result.user.role !== "OWNER") {
+        return res.status(403).json({ success: false, error: "Forbidden: OWNER authorization required" });
+      }
       res.json({ success: true, data: result });
     } catch (error: any) {
-      res.status(401).json({ success: false, error: error.message });
+      const status = error?.message?.startsWith("Forbidden:") ? 403 : 401;
+      res.status(status).json({ success: false, error: error.message });
     }
   },
   

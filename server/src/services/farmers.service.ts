@@ -17,13 +17,10 @@ export const FarmersService = {
 
   async createFarmer(data: {
     created_by: string;
-      farmer_code?: string;
-    first_name: string;
-    last_name: string;
-    middle_name?: string;
+    farmer_code?: string;
+    full_name: string;
     phone?: string;
     address?: string;
-    farm_location?: string;
     area: number;
     commitment: string;
     notes?: string;
@@ -38,12 +35,9 @@ export const FarmersService = {
   },
 
   async updateFarmer(id: string, data: Partial<{
-    first_name: string;
-    last_name: string;
-    middle_name?: string;
+    full_name: string;
     phone?: string;
     address?: string;
-    farm_location?: string;
     area?: number;
     commitment?: string;
     notes?: string;

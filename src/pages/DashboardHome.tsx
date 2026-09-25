@@ -29,6 +29,11 @@ export default function DashboardHome() {
     useState(false);
   const [isAddFarmerModalOpen, setIsAddFarmerModalOpen] = useState(false);
 
+  const [selectedFarmerForPayment, setSelectedFarmerForPayment] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -79,29 +84,68 @@ export default function DashboardHome() {
       .slice(0, 5);
   }, [transactions, farmers]);
 
-  const highBalanceFarmers = useMemo(() => {
-    const balances = new Map<string, number>();
+  const priorityFollowUpFarmers = useMemo(() => {
+    // Map farmerId -> list of transactions
+    const farmerTxMap = new Map<string, any[]>();
     transactions.forEach((tx) => {
-      if (tx.status !== "Paid") {
-        const current = balances.get(tx.farmerId) || 0;
-        balances.set(tx.farmerId, current + tx.balance);
+      const list = farmerTxMap.get(tx.farmerId) || [];
+      list.push(tx);
+      farmerTxMap.set(tx.farmerId, list);
+    });
+
+    const result: Array<{
+      id: string;
+      name: string;
+      location: string;
+      area: number;
+      status: string;
+      balance: number;
+      reason: string;
+      unpaidCount: number;
+      hasPartial: boolean;
+    }> = [];
+
+    farmers.forEach((farmer) => {
+      const fTxs = farmerTxMap.get(farmer.id) || [];
+      const unpaidTxs = fTxs.filter((t) => t.status !== "Paid");
+      const balance = unpaidTxs.reduce((sum, t) => sum + (t.balance || 0), 0);
+      const hasPartial = unpaidTxs.some((t) => t.status === "Partial");
+      const isInactive = farmer.status === "Inactive";
+
+      // Conditions to be included in Priority Follow Up:
+      // 1) Inactive status
+      // 2) Has outstanding balance / unpaid transactions
+      // 3) Has partial payments
+      if (isInactive || balance > 0 || unpaidTxs.length > 0) {
+        let reason = "Outstanding balance";
+        if (isInactive) {
+          reason = "Inactive account";
+        } else if (hasPartial) {
+          reason = "Partial payment";
+        } else if (balance > 0) {
+          reason = "Outstanding balance";
+        } else if (unpaidTxs.length > 0) {
+          reason = "Unpaid transaction";
+        }
+
+        result.push({
+          id: farmer.id,
+          name: farmer.name,
+          location: farmer.location || "",
+          area: farmer.area || 0,
+          status: farmer.status,
+          balance,
+          reason,
+          unpaidCount: unpaidTxs.length,
+          hasPartial,
+        });
       }
     });
 
-    return Array.from(balances.entries())
-      .map(([id, balance]) => {
-        const farmer = farmers.find((f) => f.id === id);
-        return {
-          id,
-          name: farmer?.name || "—",
-          location: farmer?.location || "",
-          area: farmer?.area || 0,
-          balance,
-        };
-      })
-      .filter((f) => f.balance > 0)
+    // Sort by highest balance first, then inactive accounts
+    return result
       .sort((a, b) => b.balance - a.balance)
-      .slice(0, 3);
+      .slice(0, 5);
   }, [transactions, farmers]);
 
   const lowStockItems = useMemo(() => {
@@ -335,35 +379,50 @@ export default function DashboardHome() {
                   Priority Follow-up
                 </h4>
                 <h3 className="text-sm font-bold text-gray-900">
-                  High Outstanding Balances
+                  Accounts Requiring Attention
                 </h3>
               </div>
-              {highBalanceFarmers.length > 0 && (
+              {priorityFollowUpFarmers.length > 0 && (
                 <div className="w-2 h-2 rounded-full bg-red-500 mt-1"></div>
               )}
             </div>
 
             <div className="space-y-4 mb-6">
-              {highBalanceFarmers.length > 0 ? (
-                highBalanceFarmers.map((farmer) => (
+              {priorityFollowUpFarmers.length > 0 ? (
+                priorityFollowUpFarmers.map((farmer) => (
                   <div
                     key={farmer.id}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-xs font-bold shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-[#EAF7EF] text-[#0F3D21] flex items-center justify-center text-xs font-bold shrink-0">
                         {farmer.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")
                           .substring(0, 2)}
                       </div>
-                      <div>
-                        <div className="text-xs font-bold text-gray-900 line-clamp-1">
-                          {farmer.name}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-gray-900 truncate">
+                            {farmer.name}
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                              farmer.reason === "Inactive account"
+                                ? "bg-gray-100 text-gray-600"
+                                : farmer.reason === "Partial payment"
+                                ? "bg-amber-100 text-amber-800"
+                                : farmer.reason === "Unpaid transaction"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {farmer.reason}
+                          </span>
                         </div>
-                        <div className="text-[10px] text-gray-400 line-clamp-1">
-                          {farmer.location} • {farmer.area} ha
+                        <div className="text-[10px] text-gray-400 truncate">
+                          {farmer.location || "No location"} • {farmer.area} ha
                         </div>
                         <div className="text-[10px] font-bold text-gray-900 mt-0.5">
                           ₱{farmer.balance.toLocaleString()}{" "}
@@ -373,10 +432,13 @@ export default function DashboardHome() {
                     </div>
                     <button
                       onClick={() => {
+                        setSelectedFarmerForPayment({
+                          id: farmer.id,
+                          name: farmer.name,
+                        });
                         setIsRecordPaymentModalOpen(true);
-                        // In a real app we might pre-fill the modal with this farmer's transaction
                       }}
-                      className="border border-[#0F3D21]/20 text-[#0F3D21] hover:bg-[#EAF7EF] px-3 py-1 rounded-full text-[10px] font-bold transition-colors"
+                      className="border border-[#0F3D21]/20 text-[#0F3D21] hover:bg-[#0F3D21] hover:text-white px-3 py-1.5 rounded-full text-[10px] font-bold transition-all shrink-0"
                     >
                       Collect
                     </button>
@@ -389,7 +451,7 @@ export default function DashboardHome() {
               )}
             </div>
 
-            {highBalanceFarmers.length > 0 && (
+            {priorityFollowUpFarmers.length > 0 && (
               <button
                 onClick={() => navigate("/dashboard/farmers")}
                 className="w-full mt-auto bg-gray-50 hover:bg-gray-100 text-gray-600 text-xs font-bold py-2 rounded-lg transition-colors border border-gray-100"
@@ -482,7 +544,11 @@ export default function DashboardHome() {
       />
       <RecordPaymentModal
         isOpen={isRecordPaymentModalOpen}
-        onClose={() => setIsRecordPaymentModalOpen(false)}
+        onClose={() => {
+          setIsRecordPaymentModalOpen(false);
+          setSelectedFarmerForPayment(null);
+        }}
+        initialFarmer={selectedFarmerForPayment}
       />
       <AddFarmerModal
         isOpen={isAddFarmerModalOpen}

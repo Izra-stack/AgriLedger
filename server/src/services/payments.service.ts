@@ -9,7 +9,7 @@ export const PaymentsService = {
       orderBy: { payment_date: 'desc' },
       include: {
         farmers: {
-          select: { first_name: true, last_name: true, farmer_code: true }
+          select: { full_name: true, farmer_code: true }
         },
         transactions: {
           select: { transaction_code: true, type: true, amount: true, status: true }

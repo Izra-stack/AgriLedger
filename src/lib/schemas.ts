@@ -6,7 +6,7 @@ export const farmerSchema = z.object({
   location: z.string().min(5, 'Address is required'),
   status: z.enum(['Active', 'Inactive']),
   area: z.coerce.number().min(0.1, 'Area must be at least 0.1'),
-  commitment: z.enum(['Cash Assistance', 'Farm Input', 'Both']),
+  commitment: z.enum(['Cash Assistance', 'Farm Input', 'Both']).optional(),
   notes: z.string().optional(),
 }).refine((value) => value.name.trim().split(/\s+/).length >= 2, {
   message: 'Please enter a first and last name',
@@ -14,8 +14,8 @@ export const farmerSchema = z.object({
 });
 
 export const transactionSchema = z.object({
-  farmerId: z.string().min(1, 'Please select a farmer'),
-  type: z.enum(['Fertilizer', 'Cash Advance', 'Mixed Package', 'Labor', 'Seeds', 'Chemicals']),
+  farmerId: z.string().min(1, 'Please select or type a farmer'),
+  type: z.string().min(1, 'Transaction type is required'),
   amount: z.coerce.number().positive('Amount must be greater than zero'),
   date: z.string().min(1, 'Date is required'),
   notes: z.string().optional(),
@@ -31,11 +31,11 @@ export const paymentSchema = z.object({
 
 export const inventorySchema = z.object({
   name: z.string().min(2, 'Item Name is required'),
-  category: z.enum(['Fertilizer', 'Seeds', 'Chemicals', 'Equipment']),
+  category: z.enum(['Fertilizer', 'Seeds', 'Chemicals', 'Pesticides']),
   stock: z.coerce.number().min(0, 'Initial Stock cannot be negative'),
   reorderLevel: z.coerce.number().min(0, 'Reorder Level cannot be negative'),
   price: z.coerce.number().min(0, 'Unit Price cannot be negative'),
-  location: z.string().min(2, 'Storage Location is required'),
+  location: z.string().optional(),
 });
 
 export const settingsSchema = z.object({

@@ -34,6 +34,11 @@ export const useAuthStore = create<AuthState>()((set) => ({
           try {
             const token = await firebaseUser.getIdToken();
             const session = await loginUser({ idToken: token });
+            if (session.user.role !== "OWNER") {
+              await signOut(firebaseAuth);
+              set({ user: null, isAuthenticated: false, isLoading: false });
+              return;
+            }
             set({ user: session.user, isAuthenticated: true, isLoading: false });
           } catch {
             await signOut(firebaseAuth);

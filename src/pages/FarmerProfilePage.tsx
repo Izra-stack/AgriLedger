@@ -90,8 +90,6 @@ export default function FarmerProfilePage() {
                 <span className="flex items-center gap-1"><MapPin size={14} /> {farmer.location}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                 <span>{farmer.area} ha</span>
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                <span>{farmer.commitment}</span>
               </div>
             </div>
           </div>

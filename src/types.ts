@@ -1,4 +1,4 @@
-export type InventoryCategory = 'Fertilizer' | 'Seeds' | 'Chemicals' | 'Equipment';
+export type InventoryCategory = 'Fertilizer' | 'Seeds' | 'Chemicals' | 'Pesticides';
 
 export interface InventoryItem {
   id: string;

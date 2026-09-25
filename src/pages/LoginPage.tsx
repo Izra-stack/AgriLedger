@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { loginUser } from "../lib/api";
 import { useAuthStore } from "../store/useAuthStore";
 import { toast } from "sonner";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { firebaseAuth } from "../lib/firebase";
 
 export default function LoginPage() {
@@ -24,6 +24,11 @@ export default function LoginPage() {
       return data;
     },
     onSuccess: (data) => {
+      if (data.user.role !== "OWNER") {
+        void signOut(firebaseAuth);
+        toast.error("This account is not authorized for the AgriLedger Directory.");
+        return;
+      }
       setAuth(data.user);
       toast.success("Welcome back!");
       navigate("/dashboard");
@@ -38,7 +43,7 @@ export default function LoginPage() {
         "auth/too-many-requests": "Too many attempts. Please wait and try again.",
       };
 
-      if (error?.request && !error?.response) {
+      if (error?.message === 'Network Error' || (error?.request && !error?.response)) {
         toast.error("The AgriLedger server is not running. Start both the frontend and API, then try again.");
         return;
       }

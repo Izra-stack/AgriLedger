@@ -15,9 +15,10 @@ import { format } from "date-fns";
 interface RecordPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialFarmer?: { id: string; name: string } | null;
 }
 
-export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentModalProps) {
+export default function RecordPaymentModal({ isOpen, onClose, initialFarmer = null }: RecordPaymentModalProps) {
   const queryClient = useQueryClient();
   const { data: allFarmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
   const { data: allTransactions = [] } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
@@ -50,16 +51,20 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
     }
   });
 
-  const selectedFarmerId = watch("farmerId");
+  const watchedFarmerInput = watch("farmerId") || "";
   const selectedTxId = watch("transactionId");
   const currentAmount = watch("amount") || 0;
 
-  // Derive relevant data
-  const selectedFarmer = allFarmers.find(f => f.id === selectedFarmerId);
-  
-  const unpaidTransactions = allTransactions.filter(
-    t => t.farmerId === selectedFarmerId && t.status !== 'Paid'
+  // Resolve farmer by typed name, ID, or farmer code
+  const selectedFarmer = allFarmers.find(
+    f => f.name.toLowerCase() === watchedFarmerInput.trim().toLowerCase() ||
+         f.id === watchedFarmerInput ||
+         f.farmerCode?.toLowerCase() === watchedFarmerInput.trim().toLowerCase()
   );
+  
+  const unpaidTransactions = selectedFarmer ? allTransactions.filter(
+    t => t.farmerId === selectedFarmer.id && t.status !== 'Paid'
+  ) : [];
 
   const totalOutstandingBalance = unpaidTransactions.reduce((sum, tx) => sum + tx.balance, 0);
   
@@ -68,27 +73,32 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
   // Auto-reset transaction when farmer changes
   useEffect(() => {
     setValue("transactionId", "");
-  }, [selectedFarmerId, setValue]);
+  }, [watchedFarmerInput, setValue]);
 
   useEffect(() => {
     if (isOpen) {
       reset({
         date: new Date().toISOString().slice(0, 16),
-        farmerId: "",
+        farmerId: initialFarmer ? initialFarmer.name : "",
         transactionId: "",
         amount: 0
       });
     }
-  }, [isOpen, reset]);
+  }, [isOpen, initialFarmer, reset]);
 
   const onSubmit = (data: PaymentFormValues) => {
+    if (!selectedFarmer) {
+      toast.error("Please select a valid farmer from the list.");
+      return;
+    }
+
     if (selectedTx && data.amount > selectedTx.balance) {
       toast.error(`Amount cannot exceed the remaining balance of ₱${selectedTx.balance.toLocaleString()}`);
       return;
     }
 
     createMutation.mutate({
-      farmer_id: data.farmerId,
+      farmer_id: selectedFarmer.id,
       transaction_id: data.transactionId,
       amount: data.amount,
       payment_method: 'CASH',
@@ -110,7 +120,7 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
           </Button>
           <Button 
             onClick={handleSubmit(onSubmit)} 
-            disabled={isSubmitting || (Boolean(selectedFarmerId) && unpaidTransactions.length === 0)}
+            disabled={isSubmitting || (Boolean(watchedFarmerInput) && unpaidTransactions.length === 0)}
             className="min-w-[140px]"
           >
             {isSubmitting ? "Processing..." : "Record Payment"}
@@ -123,17 +133,19 @@ export default function RecordPaymentModal({ isOpen, onClose }: RecordPaymentMod
         {/* Step 1: Select Farmer */}
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-2">Farmer Name</label>
-          <Select
+          <Input
+            list="payment-farmers-list"
+            placeholder="Type or select a farmer..."
             {...register("farmerId")}
             className={errors.farmerId ? "border-red-500 focus:border-red-500" : ""}
-          >
-            <option value="">Select a farmer...</option>
+          />
+          <datalist id="payment-farmers-list">
             {allFarmers.map(f => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.id})
+              <option key={f.id} value={f.name}>
+                {f.farmerCode ? `${f.farmerCode}` : ''} {f.location ? `- ${f.location}` : ''}
               </option>
             ))}
-          </Select>
+          </datalist>
           {errors.farmerId && <p className="text-red-500 text-xs mt-1">{errors.farmerId.message}</p>}
         </div>
 

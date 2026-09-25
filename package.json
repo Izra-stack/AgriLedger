@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "node scripts/dev-all.mjs",
     "dev": "vite --host localhost",
     "dev:server": "tsx watch server/src/server.ts",
     "dev:all": "node scripts/dev-all.mjs",

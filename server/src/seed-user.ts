@@ -13,7 +13,7 @@ async function main() {
     firebaseUser = await firebaseAdminAuth.getUserByEmail(email);
   } catch (error: any) {
     if (error.code === 'auth/user-not-found') {
-      throw new Error('Create the owner email/password account in Firebase Authentication first, then rerun this command', { cause: error });
+      throw new Error(`Create the owner email/password account in Firebase Authentication first, then rerun this command. ${error.message}`);
     }
     throw error;
   }
