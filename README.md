@@ -15,55 +15,6 @@ AgriLedger aims to improve the organization and management of an agricultural bu
 * Monitoring business activities through a dashboard
 * Generating and reviewing operational and financial records
 
-## Core Modules
-
-### Dashboard
-
-Provides a centralized overview of key business information, including farmers, transactions, payments, outstanding balances, and inventory activity.
-
-### Farmer Management
-
-Maintains essential farmer records and their associated transactions and payment history.
-
-### Transaction Management
-
-Records agricultural transactions, including products or inputs, quantities, prices, total amounts, payments, balances, dates, and transaction status.
-
-### Payment Management
-
-Tracks payments made against transactions, including payment methods, reference numbers, amounts, and payment dates.
-
-### Inventory Management
-
-Manages agricultural supplies and materials by monitoring item information, stock quantities, costs, reorder levels, and inventory movements.
-
-### Reports
-
-Provides access to transaction, payment, farmer, and inventory records to support business monitoring and record management.
-
-### Business Settings
-
-Stores essential business information, including the business name, registration details, contact information, and address.
-
-## System Users
-
-AgriLedger is primarily designed for **business owners and authorized personnel** responsible for managing agricultural, financial, and inventory records.
-
-Authentication is implemented to restrict system access to authorized users.
-
-## Core Data
-
-The system manages and relates the following primary records:
-
-* Users
-* Farmers
-* Transactions
-* Transaction Items
-* Payments
-* Inventory Items
-* Inventory Movements
-* Business Settings
-
 ## System Objective
 
 The primary objective of AgriLedger is to provide a **centralized, organized, and accessible system for managing agricultural business records**. By integrating farmer management, transactions, payments, and inventory into one platform, the system provides a structured approach to maintaining business information and monitoring daily operations.
