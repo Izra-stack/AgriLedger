@@ -15,6 +15,7 @@ AgriLedger aims to improve the organization and management of an agricultural bu
 * Monitoring business activities through a dashboard
 * Generating and reviewing operational and financial records
 
+
 ## System Objective
 
 The primary objective of AgriLedger is to provide a **centralized, organized, and accessible system for managing agricultural business records**. By integrating farmer management, transactions, payments, and inventory into one platform, the system provides a structured approach to maintaining business information and monitoring daily operations.
