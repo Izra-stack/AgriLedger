@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const { data: settings, isLoading } = useQuery({ queryKey: ['settings'], queryFn: getSettings });
+  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: getSettings });
 
   const updateMutation = useMutation({
     mutationFn: updateSettings,
@@ -27,7 +27,7 @@ export default function SettingsPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting }
+    formState: { errors }
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: settings

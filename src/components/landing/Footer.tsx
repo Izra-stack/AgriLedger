@@ -137,34 +137,34 @@ export default function Footer() {
               >
                 <Mail
                   size={18}
-                  className="mt-1 shrink-0 text-[#a8ef6b]"
+                  className="mt-1 shrink-0 text-[#f6f6f5]"
                   aria-hidden="true"
                 />
                 <span>josiecabrera@gmail.com</span>
               </a>
               <a
-                href="https://www.google.com/maps/search/?api=1&query=Santo+Tomas%2C+Davao+del+Norte"
+                href="https://www.google.com/maps/@7.5167073,125.6835144,3a,87.6y,327.27h,66.27t/data=!3m7!1e1!3m5!1s5zszJ9FxWQjHebOEBkiV8A!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D23.730000000000004%26panoid%3D5zszJ9FxWQjHebOEBkiV8A%26yaw%3D327.27!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDkyMy4wIKXMDSoASAFQAw%3D%3D"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="flex items-start gap-3 transition-colors hover:text-[#a8ef6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8ef6b]"
               >
                 <MapPin
                   size={18}
-                  className="mt-1 shrink-0 text-[#a8ef6b]"
+                  className="mt-1 shrink-0 text-[#f6f6f5]"
                   aria-hidden="true"
                 />
                 <span>Santo Tomas, Davao del Norte</span>
               </a>
               <a
-                href="tel:+639999999999"
+                href="tel:+639123456789"
                 className="flex items-start gap-3 transition-colors hover:text-[#a8ef6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a8ef6b]"
               >
                 <Phone
                   size={18}
-                  className="mt-1 shrink-0 text-[#a8ef6b]"
+                  className="mt-1 shrink-0 text-[#f6f6f5]"
                   aria-hidden="true"
                 />
-                <span>+63 999 999 9999</span>
+                <span>+63 912 3456 789</span>
               </a>
             </div>
           </address>

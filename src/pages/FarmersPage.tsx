@@ -1,4 +1,4 @@
-import { Search, Plus, MoreHorizontal } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +26,7 @@ export default function FarmersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const navigate = useNavigate();
   
-  const { data: farmers = [], isLoading } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
+  const { data: farmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({

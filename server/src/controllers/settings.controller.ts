@@ -28,7 +28,7 @@ export const SettingsController = {
       }
       const settings = await SettingsService.updateSettings(parsed.data);
       res.json({ success: true, data: settings });
-    } catch (error: any) {
+    } catch (_error: any) {
       res.status(500).json({ success: false, error: "Failed to update settings" });
     }
   }

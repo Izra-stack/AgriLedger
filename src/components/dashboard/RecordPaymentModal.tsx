@@ -10,6 +10,7 @@ import { Button } from "../ui/Button";
 import { paymentSchema, PaymentFormValues } from "../../lib/schemas";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getFarmers, getTransactions, createPayment } from "../../lib/api";
+import { findFarmerByInput } from "../../lib/utils";
 import { format } from "date-fns";
 
 interface RecordPaymentModalProps {
@@ -56,11 +57,7 @@ export default function RecordPaymentModal({ isOpen, onClose, initialFarmer = nu
   const currentAmount = watch("amount") || 0;
 
   // Resolve farmer by typed name, ID, or farmer code
-  const selectedFarmer = allFarmers.find(
-    f => f.name.toLowerCase() === watchedFarmerInput.trim().toLowerCase() ||
-         f.id === watchedFarmerInput ||
-         f.farmerCode?.toLowerCase() === watchedFarmerInput.trim().toLowerCase()
-  );
+  const selectedFarmer = findFarmerByInput(allFarmers, watchedFarmerInput);
   
   const unpaidTransactions = selectedFarmer ? allTransactions.filter(
     t => t.farmerId === selectedFarmer.id && t.status !== 'Paid'

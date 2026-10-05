@@ -49,8 +49,6 @@ export default function AddFarmerModal({
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FarmerFormValues>({
@@ -60,8 +58,6 @@ export default function AddFarmerModal({
       commitment: "Both",
     },
   });
-
-  const commitment = watch("commitment");
 
   useEffect(() => {
     if (isOpen) {
@@ -73,6 +69,7 @@ export default function AddFarmerModal({
               location: farmer.location,
               status: farmer.status,
               area: farmer.area,
+              commitment: farmer.commitment || "Both",
               notes: farmer.notes || "",
             }
           : undefined,
@@ -81,11 +78,18 @@ export default function AddFarmerModal({
   }, [isOpen, farmer, reset]);
 
   const onSubmit = (data: FarmerFormValues) => {
+    const commitmentMap: Record<string, string> = {
+      "Cash Assistance": "CASH_ASSISTANCE",
+      "Farm Input": "FARM_INPUT",
+      "Both": "BOTH",
+    };
+
     createMutation.mutate({
       full_name: data.name.trim(),
       phone: data.phone,
       address: data.location,
       area: data.area,
+      commitment: commitmentMap[data.commitment || "Both"] || "BOTH",
       notes: data.notes,
       status: data.status === "Active" ? "ACTIVE" : "INACTIVE",
     });

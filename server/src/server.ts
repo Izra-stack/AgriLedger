@@ -10,16 +10,34 @@ import authRoutes from "./routes/auth.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 
+import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware.js";
+
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
 
-app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
-  credentials: false,
-}));
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim());
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy violation"));
+      }
+    },
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: "1mb" }));
 
-app.use("/api/auth", authRoutes);
+app.use("/api/", apiRateLimiter);
+app.use("/api/auth", authRateLimiter, authRoutes);
 app.use("/api/farmers", requireAuth, requireRole("OWNER"), farmersRoutes);
 app.use("/api/inventory", requireAuth, requireRole("OWNER"), inventoryRoutes);
 app.use("/api/transactions", requireAuth, requireRole("OWNER"), transactionsRoutes);

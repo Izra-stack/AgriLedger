@@ -6,6 +6,7 @@ import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getFarmers, getInventory, createTransaction } from "../../lib/api";
+import { findFarmerByInput } from "../../lib/utils";
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -97,11 +98,7 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const targetFarmer = farmers.find(
-      f => f.name.toLowerCase() === selectedFarmerInput.trim().toLowerCase() ||
-           f.id === selectedFarmerInput ||
-           f.farmerCode?.toLowerCase() === selectedFarmerInput.trim().toLowerCase()
-    );
+    const targetFarmer = findFarmerByInput(farmers, selectedFarmerInput);
 
     if (!targetFarmer) {
       toast.error("Please select a valid farmer from the list.");

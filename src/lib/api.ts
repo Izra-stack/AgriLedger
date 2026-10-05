@@ -24,9 +24,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (error.response?.status === 401) {
       void signOut(firebaseAuth);
-      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -61,19 +60,21 @@ const mapTransaction = (t: any) => ({
   transactionCode: t.transaction_code,
   date: t.transaction_date,
   farmerId: t.farmer_id,
-  type: ({
-    CASH_ASSISTANCE: 'Cash Advance',
-    FERTILIZER: 'Fertilizer',
-    MIXED_PACKAGE: 'Mixed Package',
-    LABOR: 'Labor',
-    SEEDS: 'Seeds',
-    CHEMICALS: 'Chemicals',
-  } as Record<string, string>)[t.type] || 'Other',
-  description: t.description || '',
+  type:
+    ({
+      CASH_ASSISTANCE: "Cash Advance",
+      FERTILIZER: "Fertilizer",
+      MIXED_PACKAGE: "Mixed Package",
+      LABOR: "Labor",
+      SEEDS: "Seeds",
+      CHEMICALS: "Chemicals",
+      PESTICIDES: "Pesticides",
+    } as Record<string, string>)[t.type] || (t.type ? t.type.replace(/_/g, " ") : "Other"),
+  description: t.description || "",
   paidAmount: Number(t.paid_amount || 0),
   amount: Number(t.amount),
   balance: Number(t.balance),
-  status: t.status === 'PAID' ? 'Paid' : t.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
+  status: t.status === "PAID" ? "Paid" : t.status === "PARTIALLY_PAID" ? "Partial" : "Unpaid",
   farmerName: t.farmers ? t.farmers.full_name : undefined,
 });
 

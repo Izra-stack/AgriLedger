@@ -17,8 +17,11 @@ export const AuthController = {
       }
       res.json({ success: true, data: result });
     } catch (error: any) {
-      const status = error?.message?.startsWith("Forbidden:") ? 403 : 401;
-      res.status(status).json({ success: false, error: error.message });
+      console.error("Auth session verification error:", error);
+      if (error?.message?.startsWith("Forbidden:")) {
+        return res.status(403).json({ success: false, error: error.message });
+      }
+      return res.status(401).json({ success: false, error: "Authentication failed. Invalid or expired token." });
     }
   },
   

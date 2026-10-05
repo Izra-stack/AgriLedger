@@ -58,26 +58,22 @@ export const DashboardService = {
   },
 
   async getAnalytics() {
-    // 1. Monthly Collections
-    // Prisma does not have native Group By Month for dates easily across all databases, 
-    // so we can fetch payments and group them in JS (fine for small to medium scale)
-    const payments = await prisma.payments.findMany({
-      where: { archived_at: null },
-      select: { amount: true, payment_date: true }
-    });
+    // 1. Monthly Collections via PostgreSQL date_trunc aggregation
+    const rawMonthly = await prisma.$queryRaw<
+      Array<{ month_label: string; total_amount: number | string }>
+    >`
+      SELECT 
+        to_char(date_trunc('month', payment_date), 'Mon YYYY') AS month_label,
+        SUM(amount) AS total_amount
+      FROM payments
+      WHERE archived_at IS NULL
+      GROUP BY date_trunc('month', payment_date)
+      ORDER BY date_trunc('month', payment_date) ASC
+    `;
 
-    const monthlyMap = new Map<string, number>();
-    payments.forEach(p => {
-      const date = new Date(p.payment_date);
-      // Format: "Oct 2024"
-      const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-      const current = monthlyMap.get(monthYear) || 0;
-      monthlyMap.set(monthYear, current + Number(p.amount));
-    });
-
-    const monthlyCollections = Array.from(monthlyMap.entries()).map(([month, amount]) => ({
-      month,
-      amount
+    const monthlyCollections = rawMonthly.map((row) => ({
+      month: row.month_label,
+      amount: Number(row.total_amount || 0),
     }));
 
     // 2. Transaction Types Data

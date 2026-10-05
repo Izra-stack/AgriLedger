@@ -17,9 +17,18 @@ const createTransactionSchema = z.object({
 const updateTransactionSchema = z.object({
   type: z.string().min(1, "Type is required").max(30).optional(),
   description: z.string().optional(),
-  quantity: z.number().min(0).optional(),
-  unit_price: z.number().min(0).optional(),
-  amount: z.number().positive().optional()
+  quantity: z.number().min(0, "Quantity cannot be negative").optional(),
+  unit_price: z.number().min(0, "Unit price cannot be negative").optional(),
+  amount: z.number().positive("Amount must be positive").optional()
+}).refine((data) => {
+  if (data.quantity !== undefined && data.unit_price !== undefined && data.amount !== undefined) {
+    const expected = Number((data.quantity * data.unit_price).toFixed(2));
+    return Math.abs(expected - data.amount) < 0.05;
+  }
+  return true;
+}, {
+  message: "Transaction amount must equal quantity multiplied by unit price",
+  path: ["amount"]
 });
 
 export const TransactionsController = {

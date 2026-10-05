@@ -31,7 +31,7 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState('All Items');
   
   const queryClient = useQueryClient();
-  const { data: inventory = [], isLoading } = useQuery({ queryKey: ['inventory'], queryFn: getInventory });
+  const { data: inventory = [] } = useQuery({ queryKey: ['inventory'], queryFn: getInventory });
 
   const deleteMutation = useMutation({
     mutationFn: deleteInventoryItemApi,

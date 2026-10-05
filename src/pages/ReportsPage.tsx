@@ -16,7 +16,6 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
 
 export default function ReportsPage() {
   const { data: summary } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });

@@ -57,10 +57,62 @@ export const TransactionsService = {
         amount: new Prisma.Decimal(data.amount), balance: new Prisma.Decimal(data.amount), paid_amount: new Prisma.Decimal(0), status: "UNPAID", transaction_date: data.transaction_date,
       }});
       if (inventory && data.created_by) {
-        const after = Number(inventory.quantity) - quantity;
-        await tx.transaction_items.create({ data: { transaction_id: transaction.id, inventory_item_id: inventory.id, quantity: new Prisma.Decimal(quantity), unit_price: new Prisma.Decimal(data.unit_price ?? Number(inventory.unit_cost)), line_total: new Prisma.Decimal(data.amount) } });
-        await tx.inventory_items.update({ where: { id: inventory.id }, data: { quantity: new Prisma.Decimal(after), status: after <= 0 ? "OUT_OF_STOCK" : after <= Number(inventory.reorder_level) ? "LOW_STOCK" : "IN_STOCK", updated_at: new Date() } });
-        await tx.inventory_movements.create({ data: { inventory_item_id: inventory.id, transaction_id: transaction.id, created_by: data.created_by, movement_type: "ISSUE", quantity: new Prisma.Decimal(-quantity), quantity_before: inventory.quantity, quantity_after: new Prisma.Decimal(after), reference: transaction.transaction_code } });
+        const updateResult = await tx.inventory_items.updateMany({
+          where: {
+            id: inventory.id,
+            quantity: { gte: new Prisma.Decimal(quantity) },
+          },
+          data: {
+            quantity: { decrement: new Prisma.Decimal(quantity) },
+            updated_at: new Date(),
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error("Insufficient inventory stock");
+        }
+
+        const updatedItem = await tx.inventory_items.findUnique({
+          where: { id: inventory.id },
+        });
+
+        const after = Number(updatedItem?.quantity || 0);
+        const newStatus =
+          after <= 0
+            ? "OUT_OF_STOCK"
+            : after <= Number(inventory.reorder_level)
+            ? "LOW_STOCK"
+            : "IN_STOCK";
+
+        await tx.inventory_items.update({
+          where: { id: inventory.id },
+          data: { status: newStatus },
+        });
+
+        await tx.transaction_items.create({
+          data: {
+            transaction_id: transaction.id,
+            inventory_item_id: inventory.id,
+            quantity: new Prisma.Decimal(quantity),
+            unit_price: new Prisma.Decimal(
+              data.unit_price ?? Number(inventory.unit_cost)
+            ),
+            line_total: new Prisma.Decimal(data.amount),
+          },
+        });
+
+        await tx.inventory_movements.create({
+          data: {
+            inventory_item_id: inventory.id,
+            transaction_id: transaction.id,
+            created_by: data.created_by,
+            movement_type: "ISSUE",
+            quantity: new Prisma.Decimal(-quantity),
+            quantity_before: inventory.quantity,
+            quantity_after: new Prisma.Decimal(after),
+            reference: transaction.transaction_code,
+          },
+        });
       }
       return transaction;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });

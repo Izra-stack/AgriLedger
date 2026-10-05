@@ -1,7 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 
-const connectionString = process.env.DATABASE_URL || "postgresql://postgres:ixbp@localhost:5432/agriledger?schema=public";
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not defined");
+}
 
 const adapter = new PrismaPg({
   connectionString,

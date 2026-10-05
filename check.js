@@ -11,8 +11,8 @@ import puppeteer from 'puppeteer';
   await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle2' });
 
   // fill in the form so it doesn't fail HTML5 required validation!
-  await page.type('#email', 'admin@agriledger.com');
-  await page.type('#password', 'password');
+  await page.type('#email', process.env.TEST_EMAIL || 'user@example.com');
+  await page.type('#password', process.env.TEST_PASSWORD || 'secretpassword');
 
   console.log("Clicking login...");
   await page.click('button[type="submit"]');
