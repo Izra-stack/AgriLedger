@@ -1,31 +1,30 @@
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import {
   ArrowRightLeft,
   Bell,
   Box,
+  ChevronDown,
   CreditCard,
   FileText,
   LayoutDashboard,
   LogOut,
+  Menu,
   Search,
   Settings,
   Users,
-  Menu,
   X,
-  ChevronDown
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { getInventory, getTransactions } from "../../lib/api";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = useAuthStore(state => state.user);
-  const logout = useAuthStore(state => state.logout);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: getTransactions,
@@ -84,10 +83,16 @@ export default function DashboardLayout() {
   // Close menus on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
         setIsProfileMenuOpen(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
         setIsNotificationsOpen(false);
       }
     }
@@ -104,21 +109,25 @@ export default function DashboardLayout() {
     <div className="flex h-screen bg-[#F4F9F6] font-sans overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-brand-dark h-full flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="p-6 pb-8 flex items-center justify-between lg:justify-center">
-          <img src="/white-logo.png" alt="AgriLedger" className="w-48 md:w-52 max-w-full h-auto object-contain" />
-          <button 
+          <img
+            src="/white-logo.png"
+            alt="AgriLedger"
+            className="w-48 md:w-52 max-w-full h-auto object-contain"
+          />
+          <button
             className="lg:hidden text-white/70 hover:text-white"
             onClick={() => setIsSidebarOpen(false)}
           >
@@ -150,14 +159,16 @@ export default function DashboardLayout() {
         <div className="p-4 border-t border-white/10 mt-auto">
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-full bg-[#154226] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'U'}
+              {user?.full_name
+                ? user.full_name.substring(0, 2).toUpperCase()
+                : "U"}
             </div>
             <div className="flex flex-col flex-1 min-w-0">
               <span className="text-white text-sm font-medium truncate">
-                {user?.full_name || 'User'}
+                {user?.full_name || "User"}
               </span>
               <span className="text-white/50 text-[10px] uppercase tracking-wider truncate">
-                {user?.role || 'Role'}
+                {user?.role || "Role"}
               </span>
             </div>
             <button
@@ -179,7 +190,7 @@ export default function DashboardLayout() {
         {/* Top Header */}
         <header className="h-16 md:h-20 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-8 flex-shrink-0 z-30">
           <div className="flex items-center gap-4 flex-1">
-            <button 
+            <button
               className="lg:hidden text-gray-500 hover:text-gray-700"
               onClick={() => setIsSidebarOpen(true)}
             >
@@ -202,10 +213,10 @@ export default function DashboardLayout() {
             <div className="hidden md:block bg-gray-100 text-gray-600 px-4 py-1.5 rounded-full text-xs font-semibold">
               Today: {format(new Date(), "MMM dd, yyyy")}
             </div>
-            
+
             {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
-              <button 
+              <button
                 className="relative text-gray-400 hover:text-gray-600 transition-colors p-2"
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               >
@@ -214,11 +225,13 @@ export default function DashboardLayout() {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#0F3D21] rounded-full border border-white"></span>
                 )}
               </button>
-              
+
               {isNotificationsOpen && (
                 <div className="absolute right-0 sm:right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-50">
-                    <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                    <h3 className="text-sm font-bold text-gray-900">
+                      Notifications
+                    </h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {notifications.length === 0 ? (
@@ -228,7 +241,10 @@ export default function DashboardLayout() {
                     ) : (
                       <div className="divide-y divide-gray-50">
                         {notifications.map((notification) => (
-                          <div key={notification} className="px-4 py-3 text-xs text-gray-600">
+                          <div
+                            key={notification}
+                            className="px-4 py-3 text-xs text-gray-600"
+                          >
                             {notification}
                           </div>
                         ))}
@@ -241,31 +257,40 @@ export default function DashboardLayout() {
 
             {/* Profile Menu */}
             <div className="relative" ref={profileRef}>
-              <button 
+              <button
                 className="flex items-center gap-2 md:gap-3 p-1 hover:bg-gray-50 rounded-lg transition-colors"
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
               >
                 <div className="w-8 h-8 rounded-full bg-[#EAF7EF] flex items-center justify-center text-[#0F3D21] text-xs font-bold border border-[#0F3D21]/10 flex-shrink-0">
-                  {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'U'}
+                  {user?.full_name
+                    ? user.full_name.substring(0, 2).toUpperCase()
+                    : "U"}
                 </div>
                 <div className="hidden sm:flex items-center gap-1">
                   <span className="text-sm font-bold text-brand-text">
-                    {user?.full_name || 'User'}
+                    {user?.full_name || "User"}
                   </span>
                   <ChevronDown size={14} className="text-gray-400" />
                 </div>
               </button>
-              
+
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
                   <div className="px-4 py-2 border-b border-gray-50 sm:hidden">
-                    <p className="text-sm font-bold text-gray-900">{user?.full_name || 'User'}</p>
-                    <p className="text-[10px] text-gray-500">{user?.role || 'Role'}</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {user?.full_name || "User"}
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      {user?.role || "Role"}
+                    </p>
                   </div>
-                  <Link to="/dashboard/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                  <Link
+                    to="/dashboard/settings"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
                     <Settings size={16} className="text-gray-400" /> Settings
                   </Link>
-                  <button 
+                  <button
                     onClick={() => {
                       logout();
                       navigate("/login");
