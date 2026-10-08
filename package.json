@@ -9,7 +9,7 @@
     "dev:server": "tsx watch server/src/server.ts",
     "dev:all": "node scripts/dev-all.mjs",
     "seed:owner": "tsx server/src/seed-user.ts",
-    "build": "tsc && vite build",
+    "build": "prisma generate && tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
