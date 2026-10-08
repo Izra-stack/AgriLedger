@@ -3,7 +3,9 @@ import { signOut } from 'firebase/auth';
 import { firebaseAuth } from './firebase';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  // Use the same-origin serverless API in production. Local development can
+  // override this with VITE_API_URL=http://localhost:5000/api.
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
