@@ -20,3 +20,20 @@ AgriLedger aims to improve the organization and management of an agricultural bu
 
 The primary objective of AgriLedger is to provide a **centralized, organized, and accessible system for managing agricultural business records**. By integrating farmer management, transactions, payments, and inventory into one platform, the system provides a structured approach to maintaining business information and monitoring daily operations.
 
+## Vercel environment variables
+
+Configure these variables for the Vercel project. Keep Firebase Admin credentials server-side only:
+
+- `DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (store the private key with escaped `\n` line breaks)
+- `OWNER_EMAIL`
+- `FRONTEND_ORIGIN`
+- `VITE_API_URL`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`

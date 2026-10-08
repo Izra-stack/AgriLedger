@@ -21,7 +21,10 @@ export const AuthController = {
       if (error?.message?.startsWith("Forbidden:")) {
         return res.status(403).json({ success: false, error: error.message });
       }
-      return res.status(401).json({ success: false, error: "Authentication failed. Invalid or expired token." });
+      if (error?.code === "auth/id-token-expired" || error?.code === "auth/argument-error") {
+        return res.status(401).json({ success: false, error: "Authentication failed. Invalid or expired token." });
+      }
+      return res.status(503).json({ success: false, error: "Authentication service is unavailable." });
     }
   },
   
