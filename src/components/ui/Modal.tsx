@@ -23,10 +23,10 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = "md
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -34,19 +34,19 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = "md
       {/* Modal Content */}
       <div 
         className={cn(
-          "bg-white rounded-2xl w-full relative z-10 shadow-xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
+          "bg-white rounded-2xl w-full relative z-10 shadow-xl overflow-hidden flex flex-col my-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200",
           maxWidthClasses[maxWidth]
         )}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        <div className="flex justify-between items-center px-4 py-4 sm:px-6 sm:py-5 border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 pr-2 truncate">{title}</h2>
           <button 
             type="button" 
             onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+            className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-2 hover:bg-gray-100 touch-manipulation flex-shrink-0"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -54,13 +54,13 @@ export function Modal({ isOpen, onClose, title, children, footer, maxWidth = "md
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50 flex-shrink-0">
+          <div className="p-4 sm:p-6 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 bg-gray-50/50 flex-shrink-0">
             {footer}
           </div>
         )}

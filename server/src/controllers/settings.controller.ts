@@ -16,7 +16,8 @@ export const SettingsController = {
       const settings = await SettingsService.getSettings();
       res.json({ success: true, data: settings });
     } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ success: false, error: "Failed to retrieve settings" });
     }
   },
 

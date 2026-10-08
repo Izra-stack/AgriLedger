@@ -26,8 +26,11 @@ export const PaymentsController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      const payment = await PaymentsService.getPaymentById(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid payment ID format" });
+      }
+      const payment = await PaymentsService.getPaymentById(idResult.data);
       
       if (!payment) {
         return res.status(404).json({ success: false, error: "Payment not found" });

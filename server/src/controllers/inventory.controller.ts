@@ -29,8 +29,11 @@ export const InventoryController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      const item = await InventoryService.getItemById(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid item ID format" });
+      }
+      const item = await InventoryService.getItemById(idResult.data);
       
       if (!item) {
         return res.status(404).json({ success: false, error: "Item not found" });
@@ -62,9 +65,12 @@ export const InventoryController = {
 
   async update(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid item ID format" });
+      }
       const parsedData = updateInventorySchema.parse(req.body);
-      const item = await InventoryService.updateItem(id, { ...(parsedData as any), created_by: req.user?.id });
+      const item = await InventoryService.updateItem(idResult.data, { ...(parsedData as any), created_by: req.user?.id });
       res.json({ success: true, data: item });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -80,8 +86,11 @@ export const InventoryController = {
 
   async delete(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      await InventoryService.deleteItem(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid item ID format" });
+      }
+      await InventoryService.deleteItem(idResult.data);
       res.json({ success: true, message: "Item archived successfully" });
     } catch (error: any) {
       if (error.code === 'P2025') {

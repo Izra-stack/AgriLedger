@@ -26,8 +26,15 @@ export function createRateLimiter(options: RateLimitOptions) {
   }, 5 * 60 * 1000).unref?.();
 
   return (req: Request, res: Response, next: NextFunction) => {
-    const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
+    // Rely on req.ip (which respects 'trust proxy' if enabled in Express) or socket remoteAddress
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
     const now = Date.now();
+
+    // Prevent map memory exhaustion by capping size if under attack from massive IP variation
+    if (hits.size > 10000) {
+      hits.clear();
+    }
+
     const record = hits.get(clientIp);
 
     if (!record || now > record.resetTime) {

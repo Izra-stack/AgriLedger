@@ -34,7 +34,20 @@ app.use(
   })
 );
 
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "0");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
+
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 app.use("/api/", apiRateLimiter);
 app.use("/api/auth", authRateLimiter, authRoutes);
@@ -54,19 +67,10 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/db-test", requireAuth, requireRole("OWNER"), async (_req, res) => {
   try {
-    const result = await prisma.$queryRaw<
-      { current_database: string; current_schema: string }[]
-    >`
-      SELECT
-        current_database(),
-        current_schema()
-    `;
-
+    await prisma.$queryRaw`SELECT 1`;
     res.json({
       success: true,
-      database: result[0]?.current_database,
-      schema: result[0]?.current_schema,
-      message: "Prisma is connected to PostgreSQL",
+      message: "Database connection healthy",
     });
   } catch (error) {
     console.error("Database connection error:", error);

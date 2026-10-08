@@ -28,8 +28,11 @@ export const FarmersController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      const farmer = await FarmersService.getFarmerById(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid farmer ID format" });
+      }
+      const farmer = await FarmersService.getFarmerById(idResult.data);
       
       if (!farmer) {
         return res.status(404).json({ success: false, error: "Farmer not found" });
@@ -62,9 +65,12 @@ export const FarmersController = {
 
   async update(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid farmer ID format" });
+      }
       const parsedData = updateFarmerSchema.parse(req.body);
-      const farmer = await FarmersService.updateFarmer(id, parsedData as any);
+      const farmer = await FarmersService.updateFarmer(idResult.data, parsedData as any);
       res.json({ success: true, data: farmer });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -80,8 +86,11 @@ export const FarmersController = {
 
   async delete(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      await FarmersService.deleteFarmer(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid farmer ID format" });
+      }
+      await FarmersService.deleteFarmer(idResult.data);
       res.json({ success: true, message: "Farmer archived successfully" });
     } catch (error: any) {
       if (error.code === 'P2025') {

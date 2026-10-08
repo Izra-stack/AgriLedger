@@ -18,7 +18,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            "flex w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm transition-colors",
+            "flex w-full border border-gray-200 rounded-lg px-4 py-2.5 text-base sm:text-sm min-h-[42px] transition-colors touch-manipulation",
             "file:border-0 file:bg-transparent file:text-sm file:font-medium",
             "placeholder:text-gray-400",
             "focus:outline-none focus:border-brand-dark focus:ring-1 focus:ring-brand-dark",

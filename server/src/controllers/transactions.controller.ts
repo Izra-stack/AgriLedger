@@ -44,8 +44,11 @@ export const TransactionsController = {
 
   async getById(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
-      const tx = await TransactionsService.getTransactionById(id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid transaction ID format" });
+      }
+      const tx = await TransactionsService.getTransactionById(idResult.data);
       
       if (!tx) {
         return res.status(404).json({ success: false, error: "Transaction not found" });
@@ -84,9 +87,12 @@ export const TransactionsController = {
 
   async update(req: Request, res: Response) {
     try {
-      const id = String(req.params.id);
+      const idResult = z.string().uuid().safeParse(req.params.id);
+      if (!idResult.success) {
+        return res.status(400).json({ success: false, error: "Invalid transaction ID format" });
+      }
       const parsedData = updateTransactionSchema.parse(req.body);
-      const tx = await TransactionsService.updateTransaction(id, parsedData);
+      const tx = await TransactionsService.updateTransaction(idResult.data, parsedData);
       res.json({ success: true, data: tx });
     } catch (error: any) {
       if (error instanceof z.ZodError) {

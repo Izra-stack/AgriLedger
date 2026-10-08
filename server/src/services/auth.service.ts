@@ -9,8 +9,11 @@ export const AuthService = {
     });
 
     if (!user && decoded.email) {
+      const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+      const userEmail = decoded.email.trim().toLowerCase();
+
       const existingByEmail = await prisma.users.findUnique({
-        where: { email: decoded.email },
+        where: { email: userEmail },
       });
 
       if (existingByEmail) {
@@ -19,11 +22,11 @@ export const AuthService = {
           data: { firebase_uid: decoded.uid },
           select: { id: true, email: true, firebase_uid: true, full_name: true, role: true },
         });
-      } else {
+      } else if (ownerEmail && userEmail === ownerEmail) {
         user = await prisma.users.create({
           data: {
             firebase_uid: decoded.uid,
-            email: decoded.email,
+            email: userEmail,
             full_name: decoded.name || decoded.email.split("@")[0] || "Owner",
             role: "OWNER",
           },
