@@ -8,16 +8,17 @@ const healthResponse = (res: Response) =>
   });
 
 export default async function apiHandler(req: Request, res: Response, next: NextFunction) {
-  const requestPath = (req.url || "").split("?")[0];
-  const normalizedPath = requestPath.replace(/^\/api/, "") || "/";
+  const requestUrl = req.url || "/";
+  const queryIndex = requestUrl.indexOf("?");
+  const requestPath = queryIndex === -1 ? requestUrl : requestUrl.slice(0, queryIndex);
+  const normalizedPath = requestPath.replace(/^\/api(?:\/|$)/, "/") || "/";
 
   if (normalizedPath === "/health") {
     return healthResponse(res);
   }
 
-  if (!requestPath.startsWith("/api")) {
-    req.url = `/api${requestPath.startsWith("/") ? "" : "/"}${requestPath}`;
-  }
+  const query = queryIndex === -1 ? "" : requestUrl.slice(queryIndex);
+  req.url = `/api${normalizedPath}${query}`;
 
   const { app } = await import("../server/src/app.js");
   return app(req, res, next);
