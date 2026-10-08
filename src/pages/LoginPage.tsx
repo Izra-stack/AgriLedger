@@ -44,15 +44,18 @@ export default function LoginPage() {
       };
 
       if (error?.message === 'Network Error' || (error?.request && !error?.response)) {
-        toast.error("The AgriLedger server is not running. Start both the frontend and API, then try again.");
+        toast.error("The AgriLedger server is not reachable.");
         return;
       }
 
-      toast.error(
-        error.response?.data?.error ||
-          (firebaseCode && firebaseMessages[firebaseCode]) ||
-          "Unable to sign in. Please try again.",
-      );
+      const responseError = error.response?.data?.error;
+      const errorMessage = typeof responseError === 'string' 
+        ? responseError 
+        : typeof responseError === 'object' && responseError?.message 
+          ? responseError.message 
+          : (firebaseCode && firebaseMessages[firebaseCode]) || "Unable to sign in. Please try again.";
+
+      toast.error(errorMessage);
     }
   });
 
