@@ -11,9 +11,14 @@ import { findFarmerByInput } from "../../lib/utils";
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialFarmer?: { id: string; name: string } | null;
 }
 
-export default function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProps) {
+export default function AddTransactionModal({
+  isOpen,
+  onClose,
+  initialFarmer = null,
+}: AddTransactionModalProps) {
   const queryClient = useQueryClient();
   const { data: farmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
   const { data: inventory = [] } = useQuery({ queryKey: ['inventory'], queryFn: getInventory });
@@ -69,7 +74,7 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
   useEffect(() => {
     if (isOpen) {
       setTransactionCategory("CASH_ASSISTANCE");
-      setSelectedFarmerInput("");
+      setSelectedFarmerInput(initialFarmer?.name || "");
       setCashAmount("");
       setPurpose("");
       setInputCategory("Fertilizer");
@@ -78,7 +83,7 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
       setDate(new Date().toISOString().slice(0, 16));
       setNotes("");
     }
-  }, [isOpen]);
+  }, [initialFarmer, isOpen]);
 
   const createMutation = useMutation({
     mutationFn: createTransaction,
@@ -259,7 +264,7 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
         {/* FARM INPUT WORKFLOW */}
         {transactionCategory === "FARM_INPUT" && (
           <>
-            <div>
+            {!initialFarmer && <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                 Input Category
               </label>
@@ -272,7 +277,7 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
                 <option value="Chemicals">Chemicals</option>
                 <option value="Pesticides">Pesticides</option>
               </Select>
-            </div>
+            </div>}
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
@@ -364,4 +369,3 @@ export default function AddTransactionModal({ isOpen, onClose }: AddTransactionM
     </Modal>
   );
 }
-

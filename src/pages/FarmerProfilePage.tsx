@@ -254,7 +254,11 @@ export default function FarmerProfilePage() {
 
       </Card>
       
-      <AddTransactionModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <AddTransactionModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        initialFarmer={farmer ? { id: farmer.id, name: farmer.name } : null}
+      />
     </div>
   );
 }
