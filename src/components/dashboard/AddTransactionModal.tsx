@@ -162,7 +162,7 @@ export default function AddTransactionModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Add New Transaction"
-      maxWidth="md"
+      maxWidth={initialFarmer ? "2xl" : "md"}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={createMutation.isPending}>
@@ -211,7 +211,7 @@ export default function AddTransactionModal({
         </div>
 
         {/* Farmer Selection */}
-        <div>
+        {!initialFarmer && <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Farmer Name
           </label>
@@ -229,7 +229,7 @@ export default function AddTransactionModal({
               </option>
             ))}
           </datalist>
-        </div>
+        </div>}
 
         {/* CASH ASSISTANCE WORKFLOW */}
         {transactionCategory === "CASH_ASSISTANCE" && (
@@ -341,7 +341,7 @@ export default function AddTransactionModal({
         )}
 
         {/* SHARED FIELDS */}
-        <div>
+        {!initialFarmer && <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Date & Time
           </label>
@@ -351,7 +351,7 @@ export default function AddTransactionModal({
             onChange={(e) => setDate(e.target.value)}
             required
           />
-        </div>
+        </div>}
 
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
