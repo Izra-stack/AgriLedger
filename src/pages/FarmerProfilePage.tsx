@@ -51,7 +51,7 @@ export default function FarmerProfilePage() {
 
   if (!farmer) {
     return (
-      <div className="space-y-6 max-w-5xl">
+      <div className="w-full min-w-0 space-y-6">
         <button onClick={() => navigate('/dashboard/farmers')} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-dark">
           <ArrowLeft size={16} /> Back to Directory
         </button>
@@ -61,7 +61,7 @@ export default function FarmerProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <button 
         onClick={() => navigate('/dashboard/farmers')}
         className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-dark transition-colors"
@@ -69,66 +69,66 @@ export default function FarmerProfilePage() {
         <ArrowLeft size={16} /> Back to Directory
       </button>
 
-      <Card className="p-4 md:p-8">
+      <Card className="min-w-0 p-4 sm:p-6 lg:p-8">
         
         {/* Header Profile */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#EAF7EF] text-[#0F3D21] text-2xl font-bold flex items-center justify-center shrink-0">
+        <div className="mb-8 flex flex-col gap-6 lg:mb-10 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-4 sm:gap-6">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#EAF7EF] text-xl font-bold text-[#0F3D21] sm:h-16 sm:w-16 sm:text-2xl">
               {farmer.name.split(' ').map(n => n[0]).join('').substring(0,2)}
             </div>
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{farmer.name}</h2>
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                <h2 className="min-w-0 break-words text-xl font-bold text-gray-900 sm:text-2xl">{farmer.name}</h2>
                 <Badge variant={farmer.status === 'Active' ? 'success' : 'neutral'}>
                   {farmer.status}
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 font-medium">
-                <span>Farmer ID: {farmer.farmerCode}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                <span className="flex items-center gap-1"><MapPin size={14} /> {farmer.location}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium text-gray-500 sm:gap-x-4">
+                <span className="break-all">Farmer ID: {farmer.farmerCode}</span>
+                <span className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block"></span>
+                <span className="flex min-w-0 items-start gap-1 break-words"><MapPin size={14} className="mt-0.5 shrink-0" /> {farmer.location}</span>
+                <span className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block"></span>
                 <span>{farmer.area} ha</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <Button variant="outline" className="flex-1 md:flex-none">
+          <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+            <Button variant="outline" className="w-full sm:flex-1 lg:w-auto lg:flex-none">
               <Edit2 size={16} className="mr-2" /> Edit Profile
             </Button>
-            <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 md:flex-none">
+            <Button onClick={() => setIsAddModalOpen(true)} className="w-full sm:flex-1 lg:w-auto lg:flex-none">
               <Plus size={16} className="mr-2" /> New Transaction
             </Button>
           </div>
         </div>
 
         {/* 4 Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10 border border-gray-100 rounded-xl p-6">
-          <div className="md:border-r border-gray-100 pr-6">
+        <div className="mb-8 grid grid-cols-1 gap-0 rounded-xl border border-gray-100 p-4 sm:grid-cols-2 sm:gap-y-6 sm:p-6 lg:mb-10 lg:grid-cols-4 lg:gap-6 lg:gap-y-0">
+          <div className="border-b border-gray-100 pb-4 sm:border-b-0 sm:border-r sm:pr-6 lg:border-r">
             <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Borrowed</div>
-            <div className="text-2xl font-extrabold text-gray-900">₱{totalBorrowed.toLocaleString()}</div>
+            <div className="text-xl font-extrabold text-gray-900 sm:text-2xl">₱{totalBorrowed.toLocaleString()}</div>
             <div className="text-[10px] text-gray-400 mt-1">Current planting cycle</div>
           </div>
-          <div className="md:border-r border-gray-100 pr-6 pl-2">
+          <div className="border-b border-gray-100 py-4 sm:border-b-0 sm:pl-6 sm:pr-0 lg:border-r lg:py-0 lg:pl-0 lg:pr-6">
             <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Paid to Date</div>
-            <div className="text-2xl font-extrabold text-gray-900">₱{paidToDate.toLocaleString()}</div>
+            <div className="text-xl font-extrabold text-gray-900 sm:text-2xl">₱{paidToDate.toLocaleString()}</div>
             <div className="text-[10px] text-gray-400 mt-1">Via deductions or cash</div>
           </div>
-          <div className="md:border-r border-gray-100 pr-6 pl-2">
+          <div className="border-b border-gray-100 py-4 sm:border-b-0 sm:border-r sm:pl-0 sm:pr-6 lg:py-0">
             <div className="text-xs font-bold text-red-500 uppercase tracking-wider mb-2">Outstanding Balance</div>
-            <div className="text-2xl font-extrabold text-red-600">₱{outstandingBalance.toLocaleString()}</div>
+            <div className="text-xl font-extrabold text-red-600 sm:text-2xl">₱{outstandingBalance.toLocaleString()}</div>
             <div className="text-[10px] text-gray-400 mt-1">Amount to collect</div>
           </div>
-          <div className="pl-2">
+          <div className="pt-4 sm:pl-6 lg:pl-0 lg:pt-0">
             <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Estimated Harvest</div>
-            <div className="text-2xl font-extrabold text-[#0F3D21]">₱{estimatedHarvest.toLocaleString()}</div>
+            <div className="text-xl font-extrabold text-[#0F3D21] sm:text-2xl">₱{estimatedHarvest.toLocaleString()}</div>
             <div className="text-[10px] text-gray-400 mt-1">Based on {farmer.area} ha yield</div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-8 border-b border-gray-100 mb-8 overflow-x-auto custom-scrollbar">
+        <div className="mb-8 flex gap-6 overflow-x-auto border-b border-gray-100 custom-scrollbar sm:gap-8">
           {['Overview', 'Transactions', 'Payments'].map((tab) => (
             <button 
               key={tab}
@@ -147,7 +147,7 @@ export default function FarmerProfilePage() {
         {/* Tab Content */}
         {activeTab === 'Overview' && (
           <div className="space-y-8 animate-in fade-in duration-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid min-w-0 grid-cols-1 gap-8 md:grid-cols-2">
               <div>
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Contact Information</h4>
                 <div className="space-y-4">
@@ -159,7 +159,7 @@ export default function FarmerProfilePage() {
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Secondary Contact</div>
-                    <div className="text-sm font-bold text-gray-900">{farmer.notes || "No secondary contact"}</div>
+                    <div className="break-words text-sm font-bold text-gray-900">{farmer.notes || "No secondary contact"}</div>
                   </div>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function FarmerProfilePage() {
                 <div className="space-y-4">
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Complete Address</div>
-                    <div className="text-sm font-bold text-gray-900">{farmer.location}</div>
+                    <div className="break-words text-sm font-bold text-gray-900">{farmer.location}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 mb-1">Total Hectares</div>
@@ -178,12 +178,12 @@ export default function FarmerProfilePage() {
               </div>
             </div>
 
-            <div className="bg-[#EAF7EF] rounded-xl p-6 border border-[#0F3D21]/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col items-start justify-between gap-4 rounded-xl border border-[#0F3D21]/10 bg-[#EAF7EF] p-4 sm:flex-row sm:items-center sm:p-6">
               <div>
                 <div className="text-xs font-bold text-[#0F3D21] uppercase tracking-wider mb-1">Action Required</div>
                 <div className="text-sm text-[#0F3D21]/70">Outstanding Balance to Collect upon Harvest</div>
               </div>
-              <div className="text-3xl font-extrabold text-[#0F3D21]">₱{outstandingBalance.toLocaleString()}</div>
+              <div className="text-2xl font-extrabold text-[#0F3D21] sm:text-3xl">₱{outstandingBalance.toLocaleString()}</div>
             </div>
           </div>
         )}
