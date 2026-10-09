@@ -22,17 +22,46 @@ export const FarmersService = {
     area: number;
     notes?: string;
   }) {
-    const [{ farmer_code: farmerCode }] = await prisma.$queryRaw<Array<{ farmer_code: string }>>`
-      SELECT 'FRM-' || LPAD(nextval('farmer_code_seq')::text, 6, '0') AS farmer_code
-    `;
+    return prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('agriledger_farmer_code'))`;
+      await tx.$executeRaw`CREATE SEQUENCE IF NOT EXISTS farmer_code_seq`;
+      await tx.$executeRaw`
+        SELECT setval(
+          'farmer_code_seq',
+          GREATEST(
+            COALESCE((
+              SELECT MAX((substring(farmer_code FROM '^FRM-([0-9]+)$'))::bigint)
+              FROM farmers
+              WHERE farmer_code ~ '^FRM-[0-9]+$'
+            ), 0),
+            CASE
+              WHEN (SELECT is_called FROM farmer_code_seq)
+              THEN (SELECT last_value FROM farmer_code_seq)
+              ELSE 0
+            END,
+            1
+          ),
+          COALESCE((
+            SELECT MAX((substring(farmer_code FROM '^FRM-([0-9]+)$'))::bigint) > 0
+            FROM farmers
+            WHERE farmer_code ~ '^FRM-[0-9]+$'
+          ), false)
+          OR (SELECT is_called FROM farmer_code_seq)
+        )
+      `;
 
-    return prisma.farmers.create({
-      data: {
-        ...data,
-        farmer_code: farmerCode,
-        status: "ACTIVE",
-        commitment: "BOTH",
-      }
+      const [{ farmer_code: farmerCode }] = await tx.$queryRaw<Array<{ farmer_code: string }>>`
+        SELECT 'FRM-' || LPAD(nextval('farmer_code_seq')::text, 6, '0') AS farmer_code
+      `;
+
+      return tx.farmers.create({
+        data: {
+          ...data,
+          farmer_code: farmerCode,
+          status: "ACTIVE",
+          commitment: "BOTH",
+        },
+      });
     });
   },
 
