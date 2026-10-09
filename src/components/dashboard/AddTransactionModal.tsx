@@ -264,7 +264,7 @@ export default function AddTransactionModal({
         {/* FARM INPUT WORKFLOW */}
         {transactionCategory === "FARM_INPUT" && (
           <>
-            {!initialFarmer && <div>
+            <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                 Input Category
               </label>
@@ -277,7 +277,7 @@ export default function AddTransactionModal({
                 <option value="Chemicals">Chemicals</option>
                 <option value="Pesticides">Pesticides</option>
               </Select>
-            </div>}
+            </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
