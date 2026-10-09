@@ -16,9 +16,9 @@ import AddTransactionModal from "../components/dashboard/AddTransactionModal";
 import RecordPaymentModal from "../components/dashboard/RecordPaymentModal";
 import { Badge } from "../components/ui/Badge";
 import {
-  getDashboardSummary,
   getFarmers,
   getInventory,
+  getPayments,
   getTransactions,
 } from "../lib/api";
 import { useAuthStore } from "../store/useAuthStore";
@@ -53,25 +53,43 @@ export default function DashboardHome() {
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: getTransactions,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+  });
+  const {
+    data: payments = [],
+    isLoading: isPaymentsLoading,
+    isError: isPaymentsError,
+  } = useQuery({
+    queryKey: ["payments"],
+    queryFn: getPayments,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
   });
   const { data: inventory = [] } = useQuery({
     queryKey: ["inventory"],
     queryFn: getInventory,
   });
-  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery({
-    queryKey: ["dashboardSummary"],
-    queryFn: getDashboardSummary,
-  });
-
   const activeFarmersCount = useMemo(
     () => farmers.filter((f) => f.status === "Active").length,
     [farmers],
   );
 
-  const totalCashAdvances = summary?.totalCashAdvances || 0;
-
-  const totalCollected = summary?.totalCollected || 0;
-  const totalOutstanding = summary?.totalOutstanding || 0;
+  const totalCashAdvances = useMemo(
+    () =>
+      transactions
+        .filter((transaction) => transaction.type === "Cash Advance")
+        .reduce((sum, transaction) => sum + transaction.amount, 0),
+    [transactions],
+  );
+  const totalCollected = useMemo(
+    () => payments.reduce((sum, payment) => sum + payment.amount, 0),
+    [payments],
+  );
+  const totalOutstanding = useMemo(
+    () => transactions.reduce((sum, transaction) => sum + transaction.balance, 0),
+    [transactions],
+  );
 
   const recentTransactions = useMemo(() => {
     return transactions
@@ -157,12 +175,12 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      {isSummaryError && (
+      {isPaymentsError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Unable to load dashboard totals. Please refresh and try again.
+          Unable to load payment totals. Please refresh and try again.
         </div>
       )}
-      {isSummaryLoading && (
+      {isPaymentsLoading && (
         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
           Loading dashboard totals...
         </div>
