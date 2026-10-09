@@ -104,9 +104,13 @@ export default function ReportsPage() {
     };
     const totals = new Map<string, number>();
     transactions.forEach((transaction) => {
+      const code =
+        transaction.typeCode ||
+        Object.entries(labels).find(([, label]) => label === transaction.type)?.[0] ||
+        transaction.type;
       totals.set(
-        transaction.type,
-        (totals.get(transaction.type) || 0) + transaction.amount,
+        code,
+        (totals.get(code) || 0) + transaction.amount,
       );
     });
     return Array.from(totals, ([code, value]) => ({

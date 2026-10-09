@@ -59,6 +59,7 @@ const mapTransaction = (t: any) => ({
   transactionCode: t.transaction_code,
   date: t.transaction_date,
   farmerId: t.farmer_id,
+  typeCode: t.type,
   type:
     ({
       CASH_ASSISTANCE: "Cash Advance",
