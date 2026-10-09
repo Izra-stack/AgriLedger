@@ -3,13 +3,18 @@ import { FarmersService } from "../services/farmers.service.js";
 import { z } from "zod";
 
 const createFarmerSchema = z.object({
-  farmer_code: z.string().min(1).max(30).optional(),
   full_name: z.string().min(1, "Full name is required").max(250),
-  phone: z.string().max(30).optional(),
-  address: z.string().optional(),
-  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
-  area: z.number().min(0).max(999999).default(0),
-  commitment: z.enum(["CASH_ASSISTANCE", "FARM_INPUT", "BOTH"]).default("BOTH"),
+  phone: z.string()
+    .trim()
+    .min(1, "Contact number is required")
+    .max(30)
+    .refine(
+      (value) => /^(09\d{9}|\+639\d{9})$/.test(value.replace(/[\s()-]/g, "")),
+      "Invalid Philippine contact number",
+    )
+    .transform((value) => value.replace(/[\s()-]/g, "")),
+  address: z.string().min(1, "Address is required"),
+  area: z.number().positive("Area must be greater than zero"),
   notes: z.string().max(2000).optional()
 });
 

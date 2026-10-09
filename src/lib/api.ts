@@ -147,6 +147,8 @@ export const createPayment = async (payload: any) => {
 // Dashboard API
 export const getDashboardSummary = async () => (await api.get('/dashboard/summary')).data.data;
 export const getDashboardAnalytics = async () => (await api.get('/dashboard/analytics')).data.data;
+export const getDismissedNotificationKeys = async () => (await api.get('/notifications')).data.data as string[];
+export const dismissNotification = async (key: string) => (await api.delete(`/notifications/${encodeURIComponent(key)}`)).data;
 
 // Auth API
 export const loginUser = async (payload: any) => {

@@ -54,7 +54,7 @@ export const TransactionsService = {
         farmer_id: data.farmer_id, inventory_item_id: data.inventory_item_id, type: data.type, description: data.description,
         quantity: data.quantity !== undefined ? new Prisma.Decimal(data.quantity) : undefined,
         unit_price: data.unit_price !== undefined ? new Prisma.Decimal(data.unit_price) : undefined,
-        amount: new Prisma.Decimal(data.amount), balance: new Prisma.Decimal(data.amount), paid_amount: new Prisma.Decimal(0), status: "UNPAID", transaction_date: data.transaction_date,
+        amount: new Prisma.Decimal(data.amount), balance: new Prisma.Decimal(data.amount), paid_amount: new Prisma.Decimal(0), status: "UNPAID",
       }});
       if (inventory && data.created_by) {
         const updateResult = await tx.inventory_items.updateMany({

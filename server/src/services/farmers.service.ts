@@ -1,5 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { randomUUID } from "node:crypto";
 
 export const FarmersService = {
   async getAllFarmers() {
@@ -17,19 +16,22 @@ export const FarmersService = {
 
   async createFarmer(data: {
     created_by: string;
-    farmer_code?: string;
     full_name: string;
     phone?: string;
     address?: string;
     area: number;
-    commitment: string;
     notes?: string;
-    status?: string;
   }) {
+    const [{ farmer_code: farmerCode }] = await prisma.$queryRaw<Array<{ farmer_code: string }>>`
+      SELECT 'FRM-' || LPAD(nextval('farmer_code_seq')::text, 6, '0') AS farmer_code
+    `;
+
     return prisma.farmers.create({
       data: {
         ...data,
-        farmer_code: data.farmer_code || `FRM-${randomUUID().slice(0, 8).toUpperCase()}`,
+        farmer_code: farmerCode,
+        status: "ACTIVE",
+        commitment: "BOTH",
       }
     });
   },

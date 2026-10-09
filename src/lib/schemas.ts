@@ -1,17 +1,14 @@
 import * as z from 'zod';
 
 export const farmerSchema = z.object({
-  farmerCode: z.string().min(1, 'Farmer ID is required').max(30).optional(),
   name: z.string().min(2, 'Full Name must be at least 2 characters'),
-  phone: z.string().min(10, 'Valid phone number is required'),
+  phone: z.string().trim().refine(
+    (value) => /^(09\d{9}|\+639\d{9})$/.test(value.replace(/[\s()-]/g, '')),
+    'Enter a valid Philippine contact number',
+  ),
   location: z.string().min(5, 'Address is required'),
-  status: z.enum(['Active', 'Inactive']),
-  area: z.coerce.number().min(0.1, 'Area must be at least 0.1'),
-  commitment: z.enum(['Cash Assistance', 'Farm Input', 'Both']).optional(),
+  area: z.coerce.number().positive('Area must be greater than zero'),
   notes: z.string().optional(),
-}).refine((value) => value.name.trim().split(/\s+/).length >= 2, {
-  message: 'Please enter a first and last name',
-  path: ['name'],
 });
 
 export const transactionSchema = z.object({

@@ -85,7 +85,7 @@ export default function FarmerProfilePage() {
                 </Badge>
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 font-medium">
-                <span>{farmer.id}</span>
+                <span>Farmer ID: {farmer.farmerCode}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                 <span className="flex items-center gap-1"><MapPin size={14} /> {farmer.location}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-300"></span>

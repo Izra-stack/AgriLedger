@@ -18,9 +18,7 @@ interface AddFarmerModalProps {
     name: string;
     phone: string;
     location: string;
-    status: "Active" | "Inactive";
     area: number;
-    commitment: "Cash Assistance" | "Farm Input" | "Both";
     notes?: string;
   } | null;
 }
@@ -55,46 +53,38 @@ export default function AddFarmerModal({
   } = useForm<FarmerFormValues>({
     resolver: zodResolver(farmerSchema),
     defaultValues: {
-      status: "Active",
-      commitment: "Both",
+      name: "",
+      phone: "",
+      location: "",
+      area: 0,
+      notes: "",
     },
   });
+  const isSaving = isSubmitting || createMutation.isPending;
 
   useEffect(() => {
     if (isOpen) {
       reset(
         farmer
           ? {
-              farmerCode: farmer.farmerCode,
-              name: farmer.name,
-              phone: farmer.phone,
-              location: farmer.location,
-              status: farmer.status,
-              area: farmer.area,
-              commitment: farmer.commitment || "Both",
-              notes: farmer.notes || "",
-            }
+            name: farmer.name,
+            phone: farmer.phone,
+            location: farmer.location,
+            area: farmer.area,
+            notes: farmer.notes || "",
+          }
           : undefined,
       );
     }
   }, [isOpen, farmer, reset]);
 
   const onSubmit = (data: FarmerFormValues) => {
-    const commitmentMap: Record<string, string> = {
-      "Cash Assistance": "CASH_ASSISTANCE",
-      "Farm Input": "FARM_INPUT",
-      "Both": "BOTH",
-    };
-
     createMutation.mutate({
       full_name: data.name.trim(),
-      farmer_code: data.farmerCode?.trim(),
       phone: data.phone,
       address: data.location,
       area: data.area,
-      commitment: commitmentMap[data.commitment || "Both"] || "BOTH",
       notes: data.notes,
-      status: data.status === "Active" ? "ACTIVE" : "INACTIVE",
     });
   };
 
@@ -106,15 +96,15 @@ export default function AddFarmerModal({
       maxWidth="md"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="ghost" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
             onClick={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
+            disabled={isSaving}
             className="min-w-[120px]"
           >
-            {isSubmitting
+            {isSaving
               ? "Saving..."
               : farmer
                 ? "Save Changes"
@@ -124,19 +114,6 @@ export default function AddFarmerModal({
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-            Farmer ID Number
-          </label>
-          <Input
-            placeholder="FRM-0001"
-            {...register("farmerCode")}
-            className={errors.farmerCode ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
-          />
-          {errors.farmerCode && <p className="text-red-500 text-xs mt-1">{errors.farmerCode.message}</p>}
-          {!farmer && <p className="text-gray-400 text-xs mt-1">Leave blank to generate a unique ID.</p>}
-        </div>
-
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Full Name

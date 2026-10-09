@@ -33,15 +33,21 @@ export default function FarmersPage() {
     mutationFn: deleteFarmer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmers'] });
-      toast.success("Farmer deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardAnalytics'] });
+      toast.success("Farmer archived successfully.");
     },
-    onError: () => toast.error("Failed to delete farmer.")
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || "Failed to archive farmer.");
+    }
   });
 
   const filteredFarmers = useMemo(() => {
     return farmers.filter(farmer => {
       const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            farmer.farmerCode.toLowerCase().includes(searchQuery.toLowerCase());
+                            farmer.farmerCode?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "All" || farmer.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -115,16 +121,22 @@ export default function FarmersPage() {
                 </TableCell>
                 <TableCell className="font-medium text-gray-900">{farmer.area} ha</TableCell>
                 <TableCell className="text-right text-gray-400 relative">
-                  <button className="hover:text-gray-900 p-1 rounded-md hover:bg-gray-100 transition-colors" onClick={(e) => {
+                  <button
+                    type="button"
+                    disabled={deleteMutation.isPending}
+                    className="hover:text-gray-900 p-1 rounded-md hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={(e) => {
                     e.stopPropagation();
                     if (window.confirm("Are you sure you want to delete this farmer?")) {
-                       // We can call delete mutation here!
                        deleteMutation.mutate(farmer.id);
                     }
-                  }}>
-                    <span className="text-red-500 text-sm hover:underline">Delete</span>
+                  }}
+                  >
+                    <span className="text-red-500 text-sm hover:underline">
+                      {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                    </span>
                   </button>
-                  <button className="text-[#0F3D21] text-sm hover:underline ml-3" onClick={(e) => {
+                  <button type="button" className="text-[#0F3D21] text-sm hover:underline ml-3" onClick={(e) => {
                     e.stopPropagation();
                     setSelectedFarmer(farmer);
                     setIsAddModalOpen(true);

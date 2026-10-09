@@ -15,9 +15,16 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { getInventory, getTransactions } from "../../lib/api";
+import {
+  dismissNotification,
+  getDismissedNotificationKeys,
+  getInventory,
+  getTransactions,
+} from "../../lib/api";
+import { toast } from "sonner";
 import { useAuthStore } from "../../store/useAuthStore";
 
 export default function DashboardLayout() {
@@ -25,6 +32,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const queryClient = useQueryClient();
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: getTransactions,
@@ -37,6 +45,17 @@ export default function DashboardLayout() {
     refetchInterval: 30_000,
     refetchIntervalInBackground: true,
   });
+  const { data: dismissedNotificationKeys = [] } = useQuery({
+    queryKey: ["notificationDismissals"],
+    queryFn: getDismissedNotificationKeys,
+  });
+  const dismissNotificationMutation = useMutation({
+    mutationFn: dismissNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificationDismissals"] });
+    },
+    onError: () => toast.error("Unable to delete notification."),
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -45,7 +64,7 @@ export default function DashboardLayout() {
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const notifications = useMemo(() => {
-    const items: string[] = [];
+    const items: Array<{ key: string; message: string }> = [];
     const outstandingTransactions = transactions.filter(
       (transaction) => transaction.status !== "Paid" && transaction.balance > 0,
     ).length;
@@ -54,17 +73,23 @@ export default function DashboardLayout() {
     ).length;
 
     if (outstandingTransactions > 0) {
-      items.push(
-        `${outstandingTransactions} transaction${outstandingTransactions === 1 ? "" : "s"} with an outstanding balance`,
-      );
+      if (!dismissedNotificationKeys.includes("outstanding-transactions")) {
+        items.push({
+          key: "outstanding-transactions",
+          message: `${outstandingTransactions} transaction${outstandingTransactions === 1 ? "" : "s"} with an outstanding balance`,
+        });
+      }
     }
     if (lowStockItems > 0) {
-      items.push(
-        `${lowStockItems} inventory item${lowStockItems === 1 ? "" : "s"} at or below reorder level`,
-      );
+      if (!dismissedNotificationKeys.includes("low-stock-items")) {
+        items.push({
+          key: "low-stock-items",
+          message: `${lowStockItems} inventory item${lowStockItems === 1 ? "" : "s"} at or below reorder level`,
+        });
+      }
     }
     return items;
-  }, [inventory, transactions]);
+  }, [dismissedNotificationKeys, inventory, transactions]);
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -242,10 +267,19 @@ export default function DashboardLayout() {
                       <div className="divide-y divide-gray-50">
                         {notifications.map((notification) => (
                           <div
-                            key={notification}
-                            className="px-4 py-3 text-xs text-gray-600"
+                            key={notification.key}
+                            className="flex items-start gap-2 px-4 py-3 text-xs text-gray-600"
                           >
-                            {notification}
+                            <span className="flex-1">{notification.message}</span>
+                            <button
+                              type="button"
+                              aria-label={`Delete notification: ${notification.message}`}
+                              className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                              onClick={() => dismissNotificationMutation.mutate(notification.key)}
+                              disabled={dismissNotificationMutation.isPending}
+                            >
+                              <X size={14} />
+                            </button>
                           </div>
                         ))}
                       </div>

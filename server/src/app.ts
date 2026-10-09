@@ -8,6 +8,7 @@ import paymentsRoutes from "./routes/payments.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
 import { requireAuth, requireRole } from "./middleware/auth.middleware.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimit.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
@@ -56,6 +57,7 @@ app.use("/api/transactions", requireAuth, requireRole("OWNER"), transactionsRout
 app.use("/api/payments", requireAuth, requireRole("OWNER"), paymentsRoutes);
 app.use("/api/dashboard", requireAuth, requireRole("OWNER"), dashboardRoutes);
 app.use("/api/settings", requireAuth, requireRole("OWNER"), settingsRoutes);
+app.use("/api/notifications", requireAuth, requireRole("OWNER"), notificationsRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({
