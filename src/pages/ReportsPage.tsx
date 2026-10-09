@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, DollarSign, Activity, Download } from 'lucide-react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getDashboardSummary, getDashboardAnalytics } from '../lib/api';
+import { getPayments, getTransactions, getDashboardSummary } from '../lib/api';
 import { downloadCsv } from '../lib/export';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,33 +21,72 @@ import {
 
 export default function ReportsPage() {
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
-  const { data: analytics, isLoading: isAnalyticsLoading, isError: isAnalyticsError } = useQuery({ queryKey: ['dashboardAnalytics'], queryFn: getDashboardAnalytics });
+  const { data: payments = [], isLoading: isPaymentsLoading, isError: isPaymentsError } = useQuery({ queryKey: ['payments'], queryFn: getPayments });
+  const { data: transactions = [], isLoading: isTransactionsLoading, isError: isTransactionsError } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
 
-  // Stats Calculation
-  const totalLedgerValue = summary?.totalLedgerValue || 0;
-  const totalOutstanding = summary?.totalOutstanding || 0;
-  const totalCollected = summary?.totalCollected || 0;
+  // Derive report totals and chart data from the live queries used by the
+  // Transactions and Payments pages so payment changes appear immediately.
+  const totalLedgerValue = useMemo(
+    () => transactions.reduce((sum, transaction) => sum + transaction.amount, 0),
+    [transactions],
+  );
+  const totalOutstanding = useMemo(
+    () => transactions.reduce((sum, transaction) => sum + transaction.balance, 0),
+    [transactions],
+  );
+  const totalCollected = useMemo(
+    () => payments.reduce((sum, payment) => sum + payment.amount, 0),
+    [payments],
+  );
   const profitMargin = Number(summary?.profitMargin || 0);
 
-  // Chart Data
-  const monthlyCollections = analytics?.monthlyCollections || [];
-  
-  // Format the backend names (e.g. FERTILIZER -> Fertilizer)
-  const transactionTypesData = (analytics?.transactionTypesData || []).map((t: any) => ({
-    name: t.name === 'CASH_ASSISTANCE' ? 'Cash Advance' : t.name === 'FERTILIZER' ? 'Fertilizer' : 'Other',
-    value: t.value
-  }));
+  const monthlyCollections = useMemo(() => {
+    const totals = new Map<string, { month: string; amount: number; timestamp: number }>();
+    payments.forEach((payment) => {
+      const date = new Date(payment.date);
+      if (Number.isNaN(date.getTime())) return;
+      const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const timestamp = new Date(date.getFullYear(), date.getMonth(), 1).getTime();
+      const current = totals.get(month);
+      totals.set(month, {
+        month,
+        timestamp,
+        amount: (current?.amount || 0) + payment.amount,
+      });
+    });
+    return Array.from(totals.values())
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(({ month, amount }) => ({ month, amount }));
+  }, [payments]);
+
+  const transactionTypesData = useMemo(() => {
+    const labels: Record<string, string> = {
+      CASH_ASSISTANCE: 'Cash Advance',
+      FERTILIZER: 'Fertilizer',
+      PESTICIDES: 'Pesticides',
+      CHEMICALS: 'Chemicals',
+      SEEDS: 'Seeds',
+      LABOR: 'Labor',
+      MIXED_PACKAGE: 'Mixed Package',
+    };
+    const totals = new Map<string, number>();
+    transactions.forEach((transaction) => {
+      const name = labels[transaction.type] || transaction.type;
+      totals.set(name, (totals.get(name) || 0) + transaction.amount);
+    });
+    return Array.from(totals, ([name, value]) => ({ name, value }));
+  }, [transactions]);
 
   const COLORS = ['#0F3D21', '#195B31', '#dfa43a', '#FCD34D', '#A3E635'];
 
   return (
     <div className="space-y-6 min-h-[calc(100vh-8rem)]">
-      {(isSummaryError || isAnalyticsError) && (
+      {(isSummaryError || isPaymentsError || isTransactionsError) && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Unable to load reports. Please refresh and try again.
         </div>
       )}
-      {(isSummaryLoading || isAnalyticsLoading) && (
+      {(isSummaryLoading || isPaymentsLoading || isTransactionsLoading) && (
         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
           Loading reports...
         </div>

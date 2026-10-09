@@ -58,7 +58,7 @@ export default function DashboardHome() {
     queryKey: ["inventory"],
     queryFn: getInventory,
   });
-  const { data: summary } = useQuery({
+  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery({
     queryKey: ["dashboardSummary"],
     queryFn: getDashboardSummary,
   });
@@ -157,6 +157,16 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6">
+      {isSummaryError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Unable to load dashboard totals. Please refresh and try again.
+        </div>
+      )}
+      {isSummaryLoading && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          Loading dashboard totals...
+        </div>
+      )}
       {/* Welcome Banner */}
       <div className="bg-[#0F3D21] rounded-2xl p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
         <div>

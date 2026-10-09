@@ -2,7 +2,7 @@ import { Wallet, ArrowDownRight, ArrowUpRight, CheckCircle2, Download } from 'lu
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
-import { getPayments, getFarmers, getTransactions, getDashboardSummary } from '../lib/api';
+import { getPayments, getFarmers, getTransactions } from '../lib/api';
 import { downloadCsv } from '../lib/export';
 import RecordPaymentModal from '../components/dashboard/RecordPaymentModal';
 import { Card } from '../components/ui/Card';
@@ -21,17 +21,24 @@ import {
 export default function PaymentsPage() {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   
-  const { data: dashboard, isLoading: isDashboardLoading, isError: isDashboardError } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
   const { data: payments = [], isLoading: isPaymentsLoading, isError: isPaymentsError } = useQuery({ queryKey: ['payments'], queryFn: getPayments });
+  const { data: farmers = [], isLoading: isFarmersLoading, isError: isFarmersError } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
+  const { data: transactions = [], isLoading: isTransactionsLoading, isError: isTransactionsError } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
 
-  // Use dashboard summary for stats
-  const totalExpected = dashboard?.totalLedgerValue || 0;
-  const collectedAmount = dashboard?.totalCollected || 0;
-  const outstandingBalance = dashboard?.totalOutstanding || 0;
-  
-  // Use fully settled farmers calculation directly
-  const { data: farmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
-  const { data: transactions = [] } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
+  // Derive payment totals from the live payment and transaction queries. This
+  // keeps this page independent from the broader dashboard analytics query.
+  const totalExpected = useMemo(
+    () => transactions.reduce((sum, transaction) => sum + transaction.amount, 0),
+    [transactions],
+  );
+  const collectedAmount = useMemo(
+    () => payments.reduce((sum, payment) => sum + payment.amount, 0),
+    [payments],
+  );
+  const outstandingBalance = useMemo(
+    () => transactions.reduce((sum, transaction) => sum + transaction.balance, 0),
+    [transactions],
+  );
   
   const fullySettledFarmers = useMemo(() => {
     const farmerBalances = new Map<string, number>();
@@ -58,12 +65,12 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      {(isDashboardError || isPaymentsError) && (
+      {(isPaymentsError || isFarmersError || isTransactionsError) && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Unable to load payment summaries. Please refresh and try again.
         </div>
       )}
-      {(isDashboardLoading || isPaymentsLoading) && (
+      {(isPaymentsLoading || isFarmersLoading || isTransactionsLoading) && (
         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
           Loading payment summaries...
         </div>

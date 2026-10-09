@@ -26,7 +26,7 @@ export const DashboardService = {
     });
 
     const inputTransactions = await prisma.transaction_items.findMany({
-      where: { transactions: { archived_at: null } },
+      where: { transactions: { is: { archived_at: null } } },
       select: { line_total: true },
     });
 

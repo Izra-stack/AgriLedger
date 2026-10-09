@@ -37,7 +37,6 @@ export default function RecordPaymentModal({ isOpen, onClose, initialFarmer = nu
       toast.error(error.response?.data?.error || "Failed to record payment.");
     }
   });
-
   const {
     register,
     handleSubmit,
@@ -51,6 +50,7 @@ export default function RecordPaymentModal({ isOpen, onClose, initialFarmer = nu
       date: new Date().toISOString().slice(0, 16)
     }
   });
+  const isProcessing = isSubmitting || createMutation.isPending;
 
   const watchedFarmerInput = watch("farmerId") || "";
   const selectedTxId = watch("transactionId");
@@ -112,15 +112,15 @@ export default function RecordPaymentModal({ isOpen, onClose, initialFarmer = nu
       maxWidth="2xl"
       footer={
         <>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit(onSubmit)} 
-            disabled={isSubmitting || (Boolean(watchedFarmerInput) && unpaidTransactions.length === 0)}
+            disabled={isProcessing || (Boolean(watchedFarmerInput) && unpaidTransactions.length === 0)}
             className="min-w-[140px]"
           >
-            {isSubmitting ? "Processing..." : "Record Payment"}
+            {isProcessing ? "Processing..." : "Record Payment"}
           </Button>
         </>
       }
