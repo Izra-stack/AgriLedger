@@ -21,6 +21,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   dismissNotification,
   getDismissedNotificationKeys,
+  getFarmers,
   getInventory,
   getTransactions,
 } from "../../lib/api";
@@ -36,6 +37,12 @@ export default function DashboardLayout() {
   const { data: transactions = [] } = useQuery({
     queryKey: ["transactions"],
     queryFn: getTransactions,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+  });
+  const { data: farmers = [] } = useQuery({
+    queryKey: ["farmers"],
+    queryFn: getFarmers,
     refetchInterval: 30_000,
     refetchIntervalInBackground: true,
   });
@@ -59,9 +66,54 @@ export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState("");
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  const searchResults = useMemo(() => {
+    const query = globalSearch.trim().toLowerCase();
+    if (!query) return [];
+
+    const farmerResults = farmers
+      .filter((farmer) =>
+        [farmer.name, farmer.farmerCode, farmer.location]
+          .some((value) => value?.toLowerCase().includes(query)),
+      )
+      .slice(0, 5)
+      .map((farmer) => ({
+        id: farmer.id,
+        label: farmer.name,
+        detail: farmer.farmerCode,
+        path: `/dashboard/farmers/${farmer.id}`,
+      }));
+    const transactionResults = transactions
+      .filter((transaction) =>
+        [transaction.transactionCode, transaction.id, transaction.farmerName]
+          .some((value) => value?.toLowerCase().includes(query)),
+      )
+      .slice(0, 5)
+      .map((transaction) => ({
+        id: transaction.id,
+        label: transaction.transactionCode || transaction.id,
+        detail: transaction.farmerName || "Transaction",
+        path: `/dashboard/transactions?search=${encodeURIComponent(query)}`,
+      }));
+
+    return [...farmerResults, ...transactionResults].slice(0, 6);
+  }, [farmers, globalSearch, transactions]);
+
+  const submitGlobalSearch = () => {
+    const query = globalSearch.trim();
+    if (!query) return;
+    const result = searchResults[0];
+    if (result) {
+      navigate(result.path);
+    } else {
+      navigate(`/dashboard/farmers?search=${encodeURIComponent(query)}`);
+    }
+    setGlobalSearch("");
+  };
 
   const notifications = useMemo(() => {
     const items: Array<{ key: string; message: string }> = [];
@@ -229,8 +281,43 @@ export default function DashboardLayout() {
               <input
                 type="text"
                 placeholder="Search farmer name, barangay, or transaction ID..."
+                value={globalSearch}
+                onChange={(event) => setGlobalSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") submitGlobalSearch();
+                  if (event.key === "Escape") setGlobalSearch("");
+                }}
+                aria-label="Search farmers, locations, or transactions"
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-dark focus:border-brand-dark transition-colors"
               />
+              {globalSearch.trim() && (
+                <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((result) => (
+                      <button
+                        key={`${result.path}-${result.id}`}
+                        type="button"
+                        className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-gray-50"
+                        onClick={() => {
+                          navigate(result.path);
+                          setGlobalSearch("");
+                        }}
+                      >
+                        <span className="min-w-0 truncate font-semibold text-gray-900">{result.label}</span>
+                        <span className="shrink-0 text-xs text-gray-400">{result.detail}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <button
+                      type="button"
+                      className="w-full px-4 py-3 text-left text-sm text-gray-500 hover:bg-gray-50"
+                      onClick={submitGlobalSearch}
+                    >
+                      Search Farmers for “{globalSearch.trim()}”
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

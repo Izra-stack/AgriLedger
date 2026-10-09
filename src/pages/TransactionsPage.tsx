@@ -1,5 +1,6 @@
 import { Plus, FileText, Download, Search } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { getTransactions } from '../lib/api';
@@ -24,14 +25,21 @@ export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+  useEffect(() => {
+    if (initialSearch) setSearchQuery(initialSearch);
+  }, [initialSearch]);
   
   const { data: transactions = [] } = useQuery({ queryKey: ['transactions'], queryFn: getTransactions });
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx: any) => {
       const farmerName = tx.farmerName || "";
-      const matchesSearch = tx.transactionCode?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            farmerName.toLowerCase().includes(searchQuery.toLowerCase());
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = tx.transactionCode?.toLowerCase().includes(query) ||
+                            tx.id?.toLowerCase().includes(query) ||
+                            farmerName.toLowerCase().includes(query);
       const matchesType = typeFilter === "All" || tx.type === typeFilter;
       const matchesStatus = statusFilter === "All" || tx.status === statusFilter;
       

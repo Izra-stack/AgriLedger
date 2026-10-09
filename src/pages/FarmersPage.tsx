@@ -1,6 +1,6 @@
 import { Search, Plus } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddFarmerModal from '../components/dashboard/AddFarmerModal';
 import { getFarmers, deleteFarmer } from '../lib/api';
@@ -25,6 +25,12 @@ export default function FarmersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const initialSearch = searchParams.get("search");
+    if (initialSearch) setSearchQuery(initialSearch);
+  }, [searchParams]);
   
   const { data: farmers = [] } = useQuery({ queryKey: ['farmers'], queryFn: getFarmers });
   const queryClient = useQueryClient();
@@ -46,8 +52,10 @@ export default function FarmersPage() {
 
   const filteredFarmers = useMemo(() => {
     return farmers.filter(farmer => {
-      const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            farmer.farmerCode?.toLowerCase().includes(searchQuery.toLowerCase());
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = farmer.name.toLowerCase().includes(query) ||
+                            farmer.farmerCode?.toLowerCase().includes(query) ||
+                            farmer.location.toLowerCase().includes(query);
       const matchesStatus = statusFilter === "All" || farmer.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
