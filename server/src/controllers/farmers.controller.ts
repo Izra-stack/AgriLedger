@@ -79,6 +79,9 @@ export const FarmersController = {
       if (error.code === 'P2025') {
         return res.status(404).json({ success: false, error: "Farmer not found" });
       }
+      if (error.code === 'P2002') {
+        return res.status(409).json({ success: false, error: "Farmer code already exists" });
+      }
       console.error("Error updating farmer:", error);
       res.status(500).json({ success: false, error: "Failed to update farmer" });
     }

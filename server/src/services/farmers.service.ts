@@ -35,6 +35,7 @@ export const FarmersService = {
   },
 
   async updateFarmer(id: string, data: Partial<{
+    farmer_code?: string;
     full_name: string;
     phone?: string;
     address?: string;

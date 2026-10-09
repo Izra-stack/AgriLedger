@@ -6,7 +6,7 @@ const createTransactionSchema = z.object({
   transaction_code: z.string().min(1).max(30).optional(),
   farmer_id: z.string().uuid("Invalid farmer ID"),
   inventory_item_id: z.string().uuid("Invalid inventory ID").optional(),
-  type: z.string().min(1, "Type is required").max(30),
+  type: z.enum(["CASH_ASSISTANCE", "FERTILIZER", "FARM_INPUT", "LABOR", "SEEDS", "CHEMICALS", "PESTICIDES"]),
   description: z.string().optional(),
   quantity: z.number().min(0, "Quantity cannot be negative").optional(),
   unit_price: z.number().min(0, "Unit price cannot be negative").optional(),
@@ -15,7 +15,7 @@ const createTransactionSchema = z.object({
 });
 
 const updateTransactionSchema = z.object({
-  type: z.string().min(1, "Type is required").max(30).optional(),
+  type: z.enum(["CASH_ASSISTANCE", "FERTILIZER", "FARM_INPUT", "LABOR", "SEEDS", "CHEMICALS", "PESTICIDES"]).optional(),
   description: z.string().optional(),
   quantity: z.number().min(0, "Quantity cannot be negative").optional(),
   unit_price: z.number().min(0, "Unit price cannot be negative").optional(),

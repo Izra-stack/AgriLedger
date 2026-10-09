@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, DollarSign, Activity, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardSummary, getDashboardAnalytics } from '../lib/api';
+import { downloadCsv } from '../lib/export';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { 
@@ -18,8 +19,8 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const { data: summary } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
-  const { data: analytics } = useQuery({ queryKey: ['dashboardAnalytics'], queryFn: getDashboardAnalytics });
+  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
+  const { data: analytics, isLoading: isAnalyticsLoading, isError: isAnalyticsError } = useQuery({ queryKey: ['dashboardAnalytics'], queryFn: getDashboardAnalytics });
 
   // Stats Calculation
   const totalLedgerValue = summary?.totalLedgerValue || 0;
@@ -40,12 +41,32 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 min-h-[calc(100vh-8rem)]">
+      {(isSummaryError || isAnalyticsError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Unable to load reports. Please refresh and try again.
+        </div>
+      )}
+      {(isSummaryLoading || isAnalyticsLoading) && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          Loading reports...
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Reports & Analytics</h2>
           <p className="text-sm text-gray-500">Financial summaries, collection trends, and distribution metrics.</p>
         </div>
-        <Button variant="outline" className="bg-white">
+        <Button variant="outline" className="bg-white" onClick={() => downloadCsv(
+          `agriledger-report-${new Date().toISOString().slice(0, 10)}.csv`,
+          ["Metric", "Value"],
+          [
+            ["Total Ledger Value", totalLedgerValue],
+            ["Total Collected", totalCollected],
+            ["Outstanding Balance", totalOutstanding],
+            ["Gross Profit Margin", `${profitMargin.toFixed(1)}%`],
+            ...monthlyCollections.map((item: { month: string; amount: number }) => [`Collections - ${item.month}`, item.amount]),
+          ],
+        )}>
           <Download size={16} className="mr-2" /> Export Report
         </Button>
       </div>

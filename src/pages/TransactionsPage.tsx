@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { getTransactions } from '../lib/api';
+import { downloadCsv } from '../lib/export';
 import AddTransactionModal from '../components/dashboard/AddTransactionModal';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -46,7 +47,11 @@ export default function TransactionsPage() {
           <p className="text-sm text-gray-500">Full ledger history of inputs, cash advances, and deductions.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none whitespace-nowrap">
+          <Button variant="outline" className="flex-1 md:flex-none whitespace-nowrap" onClick={() => downloadCsv(
+            `agriledger-transactions-${new Date().toISOString().slice(0, 10)}.csv`,
+            ["Date", "Farmer", "Reference", "Type", "Amount", "Paid", "Balance", "Status"],
+            filteredTransactions.map((tx) => [tx.date, tx.farmerName, tx.transactionCode, tx.type, tx.amount, tx.paidAmount, tx.balance, tx.status]),
+          )}>
             <Download size={16} className="mr-2" /> Export
           </Button>
           <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 md:flex-none whitespace-nowrap">
@@ -72,7 +77,6 @@ export default function TransactionsPage() {
             <option value="All">All Types</option>
             <option value="Fertilizer">Fertilizer</option>
             <option value="Cash Advance">Cash Advance</option>
-            <option value="Mixed Package">Mixed Package</option>
             <option value="Labor">Labor</option>
             <option value="Seeds">Seeds</option>
             <option value="Chemicals">Chemicals</option>

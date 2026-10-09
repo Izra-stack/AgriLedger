@@ -229,7 +229,7 @@ export default function DashboardHome() {
               ₱{totalCashAdvances.toLocaleString()}
             </span>
             <div className="text-xs text-gray-400 mt-1">
-              Outstanding receivables
+              Recorded cash advances
             </div>
           </div>
         </div>

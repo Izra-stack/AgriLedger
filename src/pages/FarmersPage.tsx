@@ -40,8 +40,8 @@ export default function FarmersPage() {
 
   const filteredFarmers = useMemo(() => {
     return farmers.filter(farmer => {
-      const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            farmer.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            farmer.farmerCode.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "All" || farmer.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -106,7 +106,7 @@ export default function FarmersPage() {
                     <span className="font-bold text-gray-900 group-hover:text-[#0F3D21] transition-colors line-clamp-1">{farmer.name}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-medium">{farmer.id}</TableCell>
+                <TableCell className="font-medium">{farmer.farmerCode}</TableCell>
                 <TableCell className="text-gray-500 line-clamp-1">{farmer.location}</TableCell>
                 <TableCell>
                   <Badge variant={farmer.status === 'Active' ? 'success' : 'neutral'}>

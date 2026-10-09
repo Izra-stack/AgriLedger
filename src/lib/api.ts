@@ -86,7 +86,7 @@ const mapPayment = (p: any) => ({
   notes: p.notes,
   farmerName: p.farmers ? p.farmers.full_name : undefined,
   txStatus: p.transactions?.status === 'PAID' ? 'Paid' : p.transactions?.status === 'PARTIALLY_PAID' ? 'Partial' : 'Unpaid',
-  method: 'Cash',
+  method: p.payment_method || 'Cash',
   totalDue: Number(p.transactions?.amount ?? 0)
 });
 

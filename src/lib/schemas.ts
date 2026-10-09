@@ -1,6 +1,7 @@
 import * as z from 'zod';
 
 export const farmerSchema = z.object({
+  farmerCode: z.string().min(1, 'Farmer ID is required').max(30).optional(),
   name: z.string().min(2, 'Full Name must be at least 2 characters'),
   phone: z.string().min(10, 'Valid phone number is required'),
   location: z.string().min(5, 'Address is required'),

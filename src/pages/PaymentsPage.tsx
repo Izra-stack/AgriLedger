@@ -1,8 +1,9 @@
-import { Wallet, ArrowDownRight, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Wallet, ArrowDownRight, ArrowUpRight, CheckCircle2, Download } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { getPayments, getFarmers, getTransactions, getDashboardSummary } from '../lib/api';
+import { downloadCsv } from '../lib/export';
 import RecordPaymentModal from '../components/dashboard/RecordPaymentModal';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -20,8 +21,8 @@ import {
 export default function PaymentsPage() {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   
-  const { data: dashboard } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: getPayments });
+  const { data: dashboard, isLoading: isDashboardLoading, isError: isDashboardError } = useQuery({ queryKey: ['dashboardSummary'], queryFn: getDashboardSummary });
+  const { data: payments = [], isLoading: isPaymentsLoading, isError: isPaymentsError } = useQuery({ queryKey: ['payments'], queryFn: getPayments });
 
   // Use dashboard summary for stats
   const totalExpected = dashboard?.totalLedgerValue || 0;
@@ -57,14 +58,33 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
+      {(isDashboardError || isPaymentsError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Unable to load payment summaries. Please refresh and try again.
+        </div>
+      )}
+      {(isDashboardLoading || isPaymentsLoading) && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          Loading payment summaries...
+        </div>
+      )}
       <div className="flex justify-between items-center mb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Payments & Collections</h2>
           <p className="text-sm text-gray-500">Track incoming harvest payments and outstanding balances.</p>
         </div>
-        <Button onClick={() => setIsRecordModalOpen(true)}>
-          Record Payment
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => downloadCsv(
+            `agriledger-payments-${new Date().toISOString().slice(0, 10)}.csv`,
+            ["Date", "Farmer", "Transaction", "Amount", "Total Due", "Method", "Status"],
+            payments.map((payment) => [payment.date, payment.farmerName, payment.transactionId, payment.amount, payment.totalDue, payment.method, payment.txStatus]),
+          )}>
+            <Download size={16} className="mr-2" /> Export
+          </Button>
+          <Button onClick={() => setIsRecordModalOpen(true)}>
+            Record Payment
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

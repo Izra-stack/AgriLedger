@@ -22,35 +22,32 @@ export const DashboardService = {
     // 4. Total Cash Advances
     const cashAdvancesResult = await prisma.transactions.aggregate({
       where: { type: 'CASH_ASSISTANCE', archived_at: null },
-      _sum: { balance: true }
+      _sum: { amount: true }
     });
 
-    const inputTransactions = await prisma.transactions.findMany({
-      where: { inventory_item_id: { not: null }, archived_at: null },
-      select: {
-        quantity: true,
-        inventory_items: { select: { unit_cost: true } },
-      },
+    const inputTransactions = await prisma.transaction_items.findMany({
+      where: { transactions: { archived_at: null } },
+      select: { line_total: true },
     });
 
     const totalLedgerValue = Number(ledgerResult._sum.amount || 0);
     const totalOutstanding = Number(ledgerResult._sum.balance || 0);
     const totalCollected = Number(paymentsResult._sum.amount || 0);
-    const totalCashAdvances = Number(cashAdvancesResult._sum.balance || 0);
+    const totalCashAdvances = Number(cashAdvancesResult._sum.amount || 0);
     const totalCost = inputTransactions.reduce(
-      (sum, tx) => sum + Number(tx.quantity || 0) * Number(tx.inventory_items?.unit_cost || 0),
+      (sum, tx) => sum + Number(tx.line_total || 0),
       0,
     );
-    const grossProfit = totalCollected - totalCost;
+    const grossProfit = totalLedgerValue - totalCost;
 
     return {
       totalLedgerValue,
       totalOutstanding,
       totalCollected,
-      totalRevenue: totalCollected,
+      totalRevenue: totalLedgerValue,
       totalCost,
       grossProfit,
-      profitMargin: totalCollected > 0 ? (grossProfit / totalCollected) * 100 : 0,
+      profitMargin: totalLedgerValue > 0 ? (grossProfit / totalLedgerValue) * 100 : 0,
       activeFarmers,
       totalCashAdvances,
       collectionRate: totalLedgerValue > 0 ? (totalCollected / totalLedgerValue) * 100 : 0

@@ -14,6 +14,7 @@ interface AddFarmerModalProps {
   onClose: () => void;
   farmer?: {
     id: string;
+    farmerCode: string;
     name: string;
     phone: string;
     location: string;
@@ -64,6 +65,7 @@ export default function AddFarmerModal({
       reset(
         farmer
           ? {
+              farmerCode: farmer.farmerCode,
               name: farmer.name,
               phone: farmer.phone,
               location: farmer.location,
@@ -86,6 +88,7 @@ export default function AddFarmerModal({
 
     createMutation.mutate({
       full_name: data.name.trim(),
+      farmer_code: data.farmerCode?.trim(),
       phone: data.phone,
       address: data.location,
       area: data.area,
@@ -121,6 +124,19 @@ export default function AddFarmerModal({
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Farmer ID Number
+          </label>
+          <Input
+            placeholder="FRM-0001"
+            {...register("farmerCode")}
+            className={errors.farmerCode ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+          />
+          {errors.farmerCode && <p className="text-red-500 text-xs mt-1">{errors.farmerCode.message}</p>}
+          {!farmer && <p className="text-gray-400 text-xs mt-1">Leave blank to generate a unique ID.</p>}
+        </div>
+
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Full Name
