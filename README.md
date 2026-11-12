@@ -23,5 +23,6 @@ The primary objective of AgriLedger is to provide a **centralized, organized, an
 
 ## On maintenance 
 - Due to the new update
+- New Load
 
 
