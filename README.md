@@ -6,6 +6,8 @@ The system is intended for agricultural businesses that need an organized and re
 
 ## Purpose
 
+
+
 AgriLedger aims to improve the organization and management of an agricultural business's daily records by providing a centralized platform for:
 
 * Managing farmer information
